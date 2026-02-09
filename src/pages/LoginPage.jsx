@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styles from './LoginPage.module.css';
 
 const API_BASE = 'http://localhost:5050';
 
@@ -374,9 +373,7 @@ export default function LoginPage() {
   const backgroundImageUrl = `${process.env.PUBLIC_URL}/img/unnamed.png`;
 
   return (
-    <div
-      className={`${styles.container} bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden`}
-    >
+    <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
       <div className="flex h-screen">
         <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary flex-shrink-0">
           <div
@@ -443,7 +440,7 @@ export default function LoginPage() {
               <div className="mb-6" id="tab-container" style={{ display: activeTab === 'forgot' ? 'none' : 'block' }}>
                 <div className="flex border-b border-slate-200 dark:border-slate-700">
                   <button
-                    className={`flex-1 pb-4 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-all tab-btn ${activeTab === 'login' ? 'active' : ''}`}
+                    className={`flex-1 pb-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'login' ? 'border-primary text-primary' : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                     data-tab="login"
                     type="button"
                     onClick={() => setActiveTab('login')}
@@ -451,7 +448,7 @@ export default function LoginPage() {
                     登录
                   </button>
                   <button
-                    className={`flex-1 pb-4 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-all tab-btn ${activeTab === 'register' ? 'active' : ''}`}
+                    className={`flex-1 pb-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'register' ? 'border-primary text-primary' : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                     data-tab="register"
                     type="button"
                     onClick={() => setActiveTab('register')}
@@ -466,7 +463,7 @@ export default function LoginPage() {
             <div className="w-full max-w-[440px] mx-auto">
               <div
                 id="error-message"
-                className={`error-message fixed top-4 left-1/2 -translate-x-1/2 z-50 p-3 bg-red-50 border border-red-200 rounded-lg shadow-lg ${showErrorMessage ? 'show' : ''}`}
+                className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 p-3 bg-red-50 border border-red-200 rounded-lg shadow-lg ${showErrorMessage ? 'block' : 'hidden'}`}
               >
                 <p id="error-text" className="text-sm text-red-600">
                   {errorMessage}
@@ -475,14 +472,14 @@ export default function LoginPage() {
 
               <div
                 id="success-message"
-                className={`error-message fixed top-4 left-1/2 -translate-x-1/2 z-50 p-3 bg-green-50 border border-green-200 rounded-lg shadow-lg ${showSuccessMessage ? 'show' : ''}`}
+                className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 p-3 bg-green-50 border border-green-200 rounded-lg shadow-lg ${showSuccessMessage ? 'block' : 'hidden'}`}
               >
                 <p id="success-text" className="text-sm text-green-600">
                   {successMessage}
                 </p>
               </div>
 
-              <form id="login-form" className={`space-y-5 tab-content ${activeTab === 'login' ? 'active' : ''}`} onSubmit={handleLoginSubmit}>
+              <form id="login-form" className={`space-y-5 ${activeTab === 'login' ? 'block' : 'hidden'}`} onSubmit={handleLoginSubmit}>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="login-phone">
                     手机号
@@ -577,7 +574,7 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              <form id="register-form" className={`space-y-5 tab-content ${activeTab === 'register' ? 'active' : ''}`} onSubmit={handleRegisterSubmit}>
+              <form id="register-form" className={`space-y-5 ${activeTab === 'register' ? 'block' : 'hidden'}`} onSubmit={handleRegisterSubmit}>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="register-phone">
                     手机号
@@ -724,7 +721,7 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              <form id="forgot-form" className={`space-y-5 tab-content ${activeTab === 'forgot' ? 'active' : ''}`} onSubmit={handleForgotSubmit}>
+              <form id="forgot-form" className={`space-y-5 ${activeTab === 'forgot' ? 'block' : 'hidden'}`} onSubmit={handleForgotSubmit}>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="forgot-phone">
                     手机号

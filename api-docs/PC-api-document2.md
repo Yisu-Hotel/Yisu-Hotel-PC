@@ -72,6 +72,7 @@ Authorization: Bearer {token}
         {"id": "workdesk", "name": "办公桌"}
       ],
       "room_image_url": "https://example.com/room1.jpg",
+      "room_image_base64": "data:image/png;base64,xxxx",
       "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
@@ -102,6 +103,7 @@ Authorization: Bearer {token}
         {"id": "workdesk", "name": "办公桌"}
       ],
       "room_image_url": "https://example.com/room2.jpg",
+      "room_image_base64": "data:image/png;base64,xxxx",
       "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
@@ -133,6 +135,8 @@ Authorization: Bearer {token}
         {"id": "sofa", "name": "沙发"}
       ],
       "room_image_url": "https://example.com/room3.jpg",
+      "room_image_base64": "data:image/png;base64,xxxx",
+      "policies": {
       "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
@@ -157,6 +161,10 @@ Authorization: Bearer {token}
     "https://example.com/hotel1.jpg",
     "https://example.com/hotel2.jpg",
     "https://example.com/hotel3.jpg"
+  ],
+  "main_image_base64": [
+    "data:image/png;base64,xxxx",
+    "data:image/png;base64,xxxx"
   ],
   "tags": ["亲子友好", "免费停车场", "含早餐"],
   "location_info": {
@@ -202,6 +210,7 @@ Authorization: Bearer {token}
 | room_prices.{房型名称}.facilities[].id | string | 否 | 设施ID |
 | room_prices.{房型名称}.facilities[].name | string | 否 | 设施名称 |
 | room_prices.{房型名称}.room_image_url | string | 否 | 房型图片URL |
+| room_prices.{房型名称}.room_image_base64 | string | 否 | 房型图片Base64 |
 | room_prices.{房型名称}.policies | object | 否 | 房间政策信息 |
 | room_prices.{房型名称}.policies.cancellation | string | 否 | 取消政策 |
 | room_prices.{房型名称}.policies.payment | string | 否 | 支付政策 |
@@ -214,6 +223,7 @@ Authorization: Bearer {token}
 | room_prices.{房型名称}.prices | object | 是 | 每日价格（日期-价格映射） |
 | room_prices.{房型名称}.prices.{日期} | number | 是 | 指定日期的价格（保留2位小数） |
 | main_image_url | array | 否 | 酒店主图片URL列表 |
+| main_image_base64 | array | 否 | 酒店主图片Base64列表 |
 | tags | array | 否 | 酒店标签（如：亲子友好、免费停车场、含早餐） |
 | location_info | object | 是 | 位置信息 |
 | location_info.formatted_address | string | 是 | 格式化地址 |
@@ -389,6 +399,13 @@ curl -X POST "http://localhost:{PORT}/hotel/create" \
       "https://example.com/hotel2.jpg",
       "https://example.com/hotel3.jpg"
     ],
+    "main_image_base64": [
+      "data:image/png;base64,xxxx"
+    ],
+    "main_image_base64": [
+      "data:image/png;base64,xxxx",
+      "data:image/png;base64,xxxx"
+    ],
     "tags": ["亲子友好", "免费停车场", "含早餐"],
     "location_info": {
       "formatted_address": "北京市朝阳区阜通东大街6号",
@@ -463,6 +480,7 @@ Authorization: Bearer {token}
         {"id": "workdesk", "name": "办公桌"}
       ],
       "room_image_url": "https://example.com/room1.jpg",
+      "room_image_base64": "data:image/png;base64,xxxx",
       "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
@@ -493,6 +511,7 @@ Authorization: Bearer {token}
         {"id": "workdesk", "name": "办公桌"}
       ],
       "room_image_url": "https://example.com/room2.jpg",
+      "room_image_base64": "data:image/png;base64,xxxx",
       "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
@@ -560,6 +579,7 @@ Authorization: Bearer {token}
 | room_prices.{房型名称}.facilities[].id | string | 否 | 设施ID |
 | room_prices.{房型名称}.facilities[].name | string | 否 | 设施名称 |
 | room_prices.{房型名称}.room_image_url | string | 否 | 房型图片URL |
+| room_prices.{房型名称}.room_image_base64 | string | 否 | 房型图片Base64 |
 | room_prices.{房型名称}.policies | object | 否 | 房间政策信息 |
 | room_prices.{房型名称}.policies.cancellation | string | 否 | 取消政策 |
 | room_prices.{房型名称}.policies.payment | string | 否 | 支付政策 |
@@ -572,6 +592,7 @@ Authorization: Bearer {token}
 | room_prices.{房型名称}.prices | object | 否 | 每日价格（日期-价格映射） |
 | room_prices.{房型名称}.prices.{日期} | number | 否 | 指定日期的价格（保留2位小数） |
 | main_image_url | array | 否 | 酒店主图片URL列表 |
+| main_image_base64 | array | 否 | 酒店主图片Base64列表 |
 | tags | array | 否 | 酒店标签（如：亲子友好、免费停车场、含早餐） |
 | location_info | object | 否 | 位置信息 |
 | location_info.formatted_address | string | 否 | 格式化地址 |
@@ -717,6 +738,9 @@ Authorization: Bearer {token}
           "https://example.com/hotel2.jpg",
           "https://example.com/hotel3.jpg"
         ],
+        "main_image_base64": [
+          "data:image/png;base64,xxxx"
+        ],
         "tags": ["亲子友好", "免费停车场", "含早餐"],
         "location_info": {
           "formatted_address": "北京市朝阳区阜通东大街6号",
@@ -748,6 +772,7 @@ Authorization: Bearer {token}
 | list[].hotel_name_en | string | 酒店英文名称 |
 | list[].star_rating | int | 酒店星级 |
 | list[].main_image_url | array | 酒店主图片URL列表 |
+| list[].main_image_base64 | array | 酒店主图片Base64列表 |
 | list[].tags | array | 酒店标签 |
 | list[].location_info | object | 位置信息 |
 | list[].location_info.formatted_address | string | 格式化地址 |
@@ -840,6 +865,7 @@ Authorization: Bearer {token}
           {"id": "workdesk", "name": "办公桌"}
         ],
         "room_image_url": "https://example.com/room1.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -870,6 +896,7 @@ Authorization: Bearer {token}
           {"id": "workdesk", "name": "办公桌"}
         ],
         "room_image_url": "https://example.com/room2.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -901,6 +928,7 @@ Authorization: Bearer {token}
           {"id": "sofa", "name": "沙发"}
         ],
         "room_image_url": "https://example.com/room3.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -925,6 +953,10 @@ Authorization: Bearer {token}
       "https://example.com/hotel1.jpg",
       "https://example.com/hotel2.jpg",
       "https://example.com/hotel3.jpg"
+    ],
+    "main_image_base64": [
+      "data:image/png;base64,xxxx",
+      "data:image/png;base64,xxxx"
     ],
     "tags": ["亲子友好", "免费停车场", "含早餐"],
     "location_info": {
@@ -976,6 +1008,7 @@ Authorization: Bearer {token}
 | room_prices.{房型名称}.facilities[].id | string | 设施ID |
 | room_prices.{房型名称}.facilities[].name | string | 设施名称 |
 | room_prices.{房型名称}.room_image_url | string | 房型图片URL |
+| room_prices.{房型名称}.room_image_base64 | string | 房型图片Base64 |
 | room_prices.{房型名称}.policies | object | 房间政策信息 |
 | room_prices.{房型名称}.policies.cancellation | string | 取消政策 |
 | room_prices.{房型名称}.policies.payment | string | 支付政策 |
@@ -988,6 +1021,7 @@ Authorization: Bearer {token}
 | room_prices.{房型名称}.prices | object | 每日价格（日期-价格映射） |
 | room_prices.{房型名称}.prices.{日期} | number | 指定日期的价格（保留2位小数） |
 | main_image_url | array | 酒店主图片URL列表 |
+| main_image_base64 | array | 酒店主图片Base64列表 |
 | tags | array | 酒店标签 |
 | location_info | object | 位置信息 |
 | location_info.formatted_address | string | 格式化地址 |
@@ -1078,6 +1112,7 @@ Authorization: Bearer {token}
         {"id": "workdesk", "name": "办公桌"}
       ],
       "room_image_url": "https://example.com/room1_updated.jpg",
+      "room_image_base64": "data:image/png;base64,xxxx",
       "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
@@ -1108,6 +1143,7 @@ Authorization: Bearer {token}
         {"id": "workdesk", "name": "办公桌"}
       ],
       "room_image_url": "https://example.com/room2_updated.jpg",
+      "room_image_base64": "data:image/png;base64,xxxx",
       "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
@@ -1139,6 +1175,7 @@ Authorization: Bearer {token}
         {"id": "sofa", "name": "沙发"}
       ],
       "room_image_url": "https://example.com/room3_updated.jpg",
+      "room_image_base64": "data:image/png;base64,xxxx",
       "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
@@ -1171,6 +1208,7 @@ Authorization: Bearer {token}
         {"id": "workdesk", "name": "办公桌"}
       ],
       "room_image_url": "https://example.com/room4_updated.jpg",
+      "room_image_base64": "data:image/png;base64,xxxx",
       "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
@@ -1193,6 +1231,10 @@ Authorization: Bearer {token}
     "https://example.com/hotel1_updated.jpg",
     "https://example.com/hotel2_updated.jpg",
     "https://example.com/hotel3_updated.jpg"
+  ],
+  "main_image_base64": [
+    "data:image/png;base64,xxxx",
+    "data:image/png;base64,xxxx"
   ],
   "tags": ["亲子友好", "免费停车场", "含早餐", "商务中心"],
   "location_info": {
@@ -1238,6 +1280,7 @@ Authorization: Bearer {token}
 | room_prices.{房型名称}.facilities[].id | string | 否 | 设施ID |
 | room_prices.{房型名称}.facilities[].name | string | 否 | 设施名称 |
 | room_prices.{房型名称}.room_image_url | string | 否 | 房型图片URL |
+| room_prices.{房型名称}.room_image_base64 | string | 否 | 房型图片Base64 |
 | room_prices.{房型名称}.policies | object | 否 | 房间政策信息 |
 | room_prices.{房型名称}.policies.cancellation | string | 否 | 取消政策 |
 | room_prices.{房型名称}.policies.payment | string | 否 | 支付政策 |
@@ -1250,6 +1293,7 @@ Authorization: Bearer {token}
 | room_prices.{房型名称}.prices | object | 否 | 每日价格（日期-价格映射） |
 | room_prices.{房型名称}.prices.{日期} | number | 否 | 指定日期的价格（保留2位小数） |
 | main_image_url | array | 否 | 酒店主图片URL列表 |
+| main_image_base64 | array | 否 | 酒店主图片Base64列表 |
 | tags | array | 否 | 酒店标签（如：亲子友好、免费停车场、含早餐） |
 | location_info | object | 否 | 位置信息 |
 | location_info.formatted_address | string | 否 | 格式化地址 |
@@ -1324,6 +1368,7 @@ curl -X PUT "http://localhost:{PORT}/hotel/update/550e8400-e29b-41d4-a716-446655
           {"id": "workdesk", "name": "办公桌"}
         ],
         "room_image_url": "https://example.com/room1_updated.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -1354,6 +1399,7 @@ curl -X PUT "http://localhost:{PORT}/hotel/update/550e8400-e29b-41d4-a716-446655
           {"id": "workdesk", "name": "办公桌"}
         ],
         "room_image_url": "https://example.com/room2_updated.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -1385,6 +1431,7 @@ curl -X PUT "http://localhost:{PORT}/hotel/update/550e8400-e29b-41d4-a716-446655
           {"id": "sofa", "name": "沙发"}
         ],
         "room_image_url": "https://example.com/room3_updated.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -1417,6 +1464,7 @@ curl -X PUT "http://localhost:{PORT}/hotel/update/550e8400-e29b-41d4-a716-446655
           {"id": "workdesk", "name": "办公桌"}
         ],
         "room_image_url": "https://example.com/room4_updated.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -1531,6 +1579,7 @@ Authorization: Bearer {token}
                 {"id": "workdesk", "name": "办公桌"}
               ],
               "room_image_url": "https://example.com/room1_updated.jpg",
+              "room_image_base64": "data:image/png;base64,xxxx",
               "policies": {
                 "cancellation": "入住前48小时可免费取消",
                 "payment": "支持现金、信用卡、移动支付",
@@ -1571,6 +1620,7 @@ Authorization: Bearer {token}
                 {"id": "workdesk", "name": "办公桌"}
               ],
               "room_image_url": "https://example.com/room1.jpg",
+              "room_image_base64": "data:image/png;base64,xxxx",
               "policies": {
                 "cancellation": "入住前48小时可免费取消",
                 "payment": "支持现金、信用卡、移动支付",
@@ -1601,6 +1651,7 @@ Authorization: Bearer {token}
                 {"id": "workdesk", "name": "办公桌"}
               ],
               "room_image_url": "https://example.com/room2.jpg",
+              "room_image_base64": "data:image/png;base64,xxxx",
               "policies": {
                 "cancellation": "入住前48小时可免费取消",
                 "payment": "支持现金、信用卡、移动支付",
@@ -1632,6 +1683,7 @@ Authorization: Bearer {token}
                 {"id": "sofa", "name": "沙发"}
               ],
               "room_image_url": "https://example.com/room3.jpg",
+              "room_image_base64": "data:image/png;base64,xxxx",
               "policies": {
                 "cancellation": "入住前48小时可免费取消",
                 "payment": "支持现金、信用卡、移动支付",

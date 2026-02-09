@@ -141,6 +141,8 @@ export default function Overview() {
     event.currentTarget.src = DEFAULT_IMAGE;
   };
 
+  const avatarUrl = profile?.avatar_base64 || profile?.avatar || DEFAULT_AVATAR;
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     setIsMenuOpen(false);
@@ -221,7 +223,18 @@ export default function Overview() {
               className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden ring-2 ring-primary/20"
               onClick={() => setIsMenuOpen((prev) => !prev)}
             >
-              <img src={DEFAULT_AVATAR} alt="Profile" className="w-full h-full object-cover" />
+              <img
+                src={avatarUrl}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={(event) => {
+                  if (event.currentTarget.dataset.fallbackApplied) {
+                    return;
+                  }
+                  event.currentTarget.dataset.fallbackApplied = 'true';
+                  event.currentTarget.src = DEFAULT_AVATAR;
+                }}
+              />
             </button>
             {isMenuOpen && (
               <div className="absolute right-0 top-12 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg overflow-hidden">
