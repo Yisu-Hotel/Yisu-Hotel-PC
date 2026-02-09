@@ -45,6 +45,7 @@
 | opening_date | DATE | NOT NULL | 开业时间 |
 | nearby_info | TEXT | NULL | 周边信息（景点、交通等） |
 | main_image_url | JSONB | NULL | 酒店主图片URL数组 |
+| main_image_base64 | JSONB | NULL | 酒店主图片Base64数组 |
 | tags | JSONB | NULL | 酒店标签（如：亲子友好、免费停车场、含早餐） |
 | location_info | JSONB | NULL | 位置信息（包含格式化地址、国家、省份、城市、区、街道、门牌号、经纬度坐标） |
 | status | VARCHAR(20) | NOT NULL | 状态：draft（草稿）、pending（待审核）、auditing（审核中）、approved（已通过）、rejected（已拒绝）、published（已发布）、offline（已下线） |
@@ -162,6 +163,7 @@
 | area | INTEGER | NOT NULL | 房间面积（平方米） |
 | description | TEXT | NULL | 房间描述 |
 | room_image_url | VARCHAR(500) | NULL | 房型图片URL |
+| room_image_base64 | TEXT | NULL | 房型图片Base64 |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT NOW() | 创建时间 |
 | updated_at | TIMESTAMP | NOT NULL, DEFAULT NOW() | 更新时间 |
 
@@ -319,6 +321,7 @@
 | gender | VARCHAR(10) | NULL | 性别：男、女 |
 | birthday | DATE | NULL | 生日 |
 | avatar | VARCHAR(500) | NULL | 头像URL |
+| avatar_base64 | TEXT | NULL | 头像Base64 |
 | created_at | TIMESTAMP | NOT NULL, DEFAULT NOW() | 创建时间 |
 | updated_at | TIMESTAMP | NOT NULL, DEFAULT NOW() | 更新时间 |
 
@@ -492,6 +495,7 @@ Banner管理表，存储首页推广广告Banner信息。
 |--------|------|------|
 | id | VARCHAR(50) | PRIMARY KEY | BannerID |
 | image_url | VARCHAR(500) | NOT NULL | Banner图片URL |
+| image_base64 | TEXT | NULL | Banner图片Base64 |
 | title | VARCHAR(100) | NOT NULL | Banner标题 |
 | description | TEXT | NULL | Banner描述 |
 | target_type | VARCHAR(20) | NOT NULL | 目标类型：hotel（酒店）、promotion（优惠）、url（链接） |

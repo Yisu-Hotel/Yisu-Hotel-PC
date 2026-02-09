@@ -47,6 +47,22 @@ const statusBadgeStyle = (status) => {
   return 'bg-slate-400 text-white';
 };
 
+const resolveHotelImage = (hotel) => {
+  const images = hotel?.main_image_url;
+  if (Array.isArray(images)) {
+    const base64Image = images.find((item) => typeof item === 'string' && item.startsWith('data:image'));
+    if (base64Image) {
+      return base64Image;
+    }
+    const urlImage = images.find((item) => typeof item === 'string' && item);
+    return urlImage || DEFAULT_IMAGE;
+  }
+  if (typeof images === 'string' && images) {
+    return images;
+  }
+  return DEFAULT_IMAGE;
+};
+
 const HotelGrid = ({ hotels, loading, onImageError, onViewDetail }) => {
   if (loading) {
     return (
@@ -68,7 +84,7 @@ const HotelGrid = ({ hotels, loading, onImageError, onViewDetail }) => {
             <img
               alt={hotel.hotel_name_cn}
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
-              src={(hotel.main_image_url && hotel.main_image_url[0]) || DEFAULT_IMAGE}
+              src={resolveHotelImage(hotel)}
               loading="lazy"
               onError={onImageError}
             />
