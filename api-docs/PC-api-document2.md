@@ -724,6 +724,10 @@ Authorization: Bearer {token}
           "district": "朝阳区"
         },
         "status": "approved",
+        "favorite_count": 128,
+        "average_rating": 4.5,
+        "booking_count": 356,
+        "review_count": 89,
         "created_at": "2026-02-01T10:00:00.000Z",
         "updated_at": "2026-02-03T15:30:00.000Z"
       }
@@ -750,6 +754,10 @@ Authorization: Bearer {token}
 | list[].location_info.city | string | 城市 |
 | list[].location_info.district | string | 区 |
 | list[].status | string | 状态：draft（草稿）、pending（待审核）、approved（已通过）、rejected（已拒绝） |
+| list[].favorite_count | int | 收藏量 |
+| list[].average_rating | decimal | 平均评分（1-5分） |
+| list[].booking_count | int | 预定量 |
+| list[].review_count | int | 评论量 |
 | list[].created_at | string | 创建时间 |
 | list[].updated_at | string | 更新时间 |
 
