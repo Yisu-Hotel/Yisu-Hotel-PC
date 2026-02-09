@@ -78,7 +78,7 @@ export default function LoginPage() {
     const token = getToken();
     const user = getUser();
     if (token && user) {
-      navigate('/dashboard');
+      navigate('/overview');
     }
   }, []);
 
@@ -217,7 +217,7 @@ export default function LoginPage() {
         }
         showSuccess('登录成功');
         redirectTimeoutRef.current = setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/overview');
         }, 1000);
       } else {
         showError(result.msg || '登录失败');
@@ -295,7 +295,7 @@ export default function LoginPage() {
         }
         showSuccess('注册成功');
         redirectTimeoutRef.current = setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/overview');
         }, 1000);
       } else {
         showError(result.msg || '注册失败');

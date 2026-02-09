@@ -287,8 +287,7 @@ curl -X POST "http://localhost:{PORT}/auth/register" \
 ```json
 {
   "phone": "13800138000",
-  "password": "123456",
-  "token_expires_in": 2592000
+  "password": "123456"
 }
 ```
 
@@ -297,7 +296,6 @@ curl -X POST "http://localhost:{PORT}/auth/register" \
 |--------|------|------|------|
 | phone | string | 是 | 手机号 |
 | password | string | 是 | 密码 |
-| token_expires_in | number | 否 | Token 有效期（秒），可用于实现“保持登录状态” |
 
 **响应示例:**
 ```json
@@ -340,7 +338,7 @@ curl -X POST "http://localhost:{PORT}/auth/register" \
 ```bash
 curl -X POST "http://localhost:{PORT}/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"phone": "13800138000", "password": "123456", "token_expires_in": 2592000}'
+  -d '{"phone": "13800138000", "password": "123456"}'
 ```
 
 ---

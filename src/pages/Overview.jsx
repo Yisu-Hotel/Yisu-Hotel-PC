@@ -1,0 +1,261 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import useSWR from 'swr';
+import Dashboard from './Dashboard';
+import Listings from './Listings';
+import Audits from './Audits';
+import Settings from './Settings';
+
+const API_BASE = 'http://localhost:5050';
+const PAGE_SIZE = 100;
+const PREVIEW_COUNT = 4;
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?q=80&w=200&auto=format&fit=facearea&facepad=2&h=200';
+const DEFAULT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="%23e2e8f0"/><path d="M180 280l90-110 90 110 60-70 110 130H180z" fill="%23cbd5f5"/><circle cx="420" cy="150" r="40" fill="%23cbd5f5"/></svg>';
+
+const getToken = () => localStorage.getItem('token');
+
+const fetchProfile = async (token) => {
+  const response = await fetch(`${API_BASE}/user/profile`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const result = await response.json();
+  if (!response.ok || result.code !== 0) {
+    throw new Error(result.msg || '加载失败');
+  }
+  return result.data;
+};
+
+const fetchHotelPage = async (token, page, size) => {
+  const response = await fetch(`${API_BASE}/hotel/list?page=${page}&size=${size}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const result = await response.json();
+  if (!response.ok || result.code !== 0) {
+    throw new Error(result.msg || '加载失败');
+  }
+  return result.data;
+};
+
+const fetchAllHotels = async (token) => {
+  const firstPage = await fetchHotelPage(token, 1, PAGE_SIZE);
+  const total = firstPage.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (totalPages === 1) {
+    return { total, list: firstPage.list || [] };
+  }
+  const restPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }).map((_, index) => fetchHotelPage(token, index + 2, PAGE_SIZE))
+  );
+  const list = [firstPage.list || [], ...restPages.map((page) => page.list || [])].flat();
+  return { total, list };
+};
+
+export default function Overview() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const token = getToken();
+  const activeTab = searchParams.get('tab') || 'dashboard';
+  const view = searchParams.get('view') || '';
+
+  useEffect(() => {
+    document.title = '商户控制台 | EasyStay';
+    document.documentElement.classList.add('light');
+    return () => {
+      document.documentElement.classList.remove('light');
+    };
+  }, []);
+
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSWR(
+    token ? ['profile', token] : null,
+    () => fetchProfile(token)
+  );
+
+  const {
+    data: allHotels,
+    isLoading: allHotelsLoading,
+    error: allHotelsError
+  } = useSWR(
+    token ? ['hotel-all', token] : null,
+    () => fetchAllHotels(token)
+  );
+
+  const stats = useMemo(() => {
+    if (!allHotels || !allHotels.list) {
+      return {
+        totalFavorites: 0,
+        totalBookings: 0,
+        totalHotels: 0,
+        approvedHotels: 0
+      };
+    }
+    const totalFavorites = allHotels.list.reduce((sum, item) => sum + (Number(item.favorite_count) || 0), 0);
+    const totalBookings = allHotels.list.reduce((sum, item) => sum + (Number(item.booking_count) || 0), 0);
+    const approvedHotels = allHotels.list.filter((item) => item.status === 'approved').length;
+    return {
+      totalFavorites,
+      totalBookings,
+      totalHotels: allHotels.total || 0,
+      approvedHotels
+    };
+  }, [allHotels]);
+
+  const menuItems = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'listings', label: 'Listings' },
+    { key: 'audits', label: 'Audits' },
+    { key: 'settings', label: 'Settings' }
+  ];
+
+  const profileValue = (value) => {
+    if (profileLoading) {
+      return null;
+    }
+    if (profileError) {
+      return '--';
+    }
+    return value || '--';
+  };
+
+  const handleMenuClick = (key) => {
+    setSearchParams({ tab: key });
+  };
+
+  const handleViewAll = () => {
+    setSearchParams({ tab: 'dashboard', view: 'properties' });
+  };
+
+  const handleBackToOverview = () => {
+    setSearchParams({ tab: 'dashboard' });
+  };
+
+  const handleImageError = (event) => {
+    if (event.currentTarget.dataset.fallbackApplied) {
+      return;
+    }
+    event.currentTarget.dataset.fallbackApplied = 'true';
+    event.currentTarget.src = DEFAULT_IMAGE;
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsMenuOpen(false);
+    navigate('/login', { replace: true });
+  };
+
+  const previewHotels = useMemo(() => {
+    if (!allHotels || !allHotels.list) {
+      return [];
+    }
+    return allHotels.list.slice(0, PREVIEW_COUNT);
+  }, [allHotels]);
+
+  const isDashboard = activeTab === 'dashboard';
+  const isViewAll = isDashboard && view === 'properties';
+
+  return (
+    <div className="flex h-screen bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
+        <div className="p-6 flex items-center gap-3">
+          <div className="bg-primary p-2 rounded-lg text-white font-bold">ES</div>
+          <h1 className="text-xl font-bold tracking-tight">EasyStay</h1>
+        </div>
+        <nav className="flex-1 mt-4">
+          {menuItems.map((item) => {
+            const isActive = activeTab === item.key;
+            return (
+              <button
+                key={item.key}
+                onClick={() => handleMenuClick(item.key)}
+                className={`w-full flex items-center gap-3 px-6 py-4 text-sm font-semibold transition-all duration-200 ${
+                  isActive
+                    ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-primary'
+                }`}
+              >
+                <span className="inline-flex h-2 w-2 rounded-full bg-current opacity-70" />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+          <button className="w-full rounded-lg px-4 py-3 flex items-center gap-3 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+              <svg className="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3a6 6 0 0 1 6 6v3.5l1.6 2.7a1 1 0 0 1-.86 1.5H5.26a1 1 0 0 1-.86-1.5L6 12.5V9a6 6 0 0 1 6-6Z" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </span>
+            <span className="font-semibold">Notifications</span>
+          </button>
+        </div>
+      </aside>
+
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Merchant Overview</h2>
+            <p className="text-sm text-slate-500">Welcome back</p>
+          </div>
+          <div className="flex items-center gap-4 relative">
+            <div className="text-right mr-2 hidden sm:block">
+              {profileLoading ? (
+                <div className="space-y-2">
+                  <div className="h-3 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                  <div className="h-2 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm font-bold text-slate-800 dark:text-white leading-none">{profileValue(profile?.account)}</p>
+                  <p className="text-xs text-slate-500">{profileValue(profile?.role)}</p>
+                  <p className="text-xs text-slate-400">{profileValue(profile?.nickname)}</p>
+                </>
+              )}
+            </div>
+            <button
+              className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden ring-2 ring-primary/20"
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+            >
+              <img src={DEFAULT_AVATAR} alt="Profile" className="w-full h-full object-cover" />
+            </button>
+            {isMenuOpen && (
+              <div className="absolute right-0 top-12 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg overflow-hidden">
+                <div className="px-4 py-3 text-sm text-slate-500">用户菜单</div>
+                <button
+                  className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                  onClick={handleLogout}
+                >
+                  退出登录
+                </button>
+              </div>
+            )}
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-8 space-y-8">
+          {activeTab === 'dashboard' && (
+            <Dashboard
+              stats={stats}
+              previewHotels={previewHotels}
+              allHotels={allHotels?.list || []}
+              loading={allHotelsLoading}
+              error={allHotelsError}
+              isViewAll={isViewAll}
+              onViewAll={handleViewAll}
+              onBack={handleBackToOverview}
+              onImageError={handleImageError}
+            />
+          )}
+          {activeTab === 'listings' && <Listings />}
+          {activeTab === 'audits' && <Audits />}
+          {activeTab === 'settings' && <Settings />}
+        </div>
+      </main>
+    </div>
+  );
+}
