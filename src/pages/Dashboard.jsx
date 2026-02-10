@@ -48,12 +48,18 @@ const statusBadgeStyle = (status) => {
 };
 
 const resolveHotelImage = (hotel) => {
-  const images = hotel?.main_image_url;
-  if (Array.isArray(images)) {
-    const base64Image = images.find((item) => typeof item === 'string' && item.startsWith('data:image'));
+  const base64Images = hotel?.main_image_base64;
+  if (Array.isArray(base64Images)) {
+    const base64Image = base64Images.find((item) => typeof item === 'string' && item);
     if (base64Image) {
       return base64Image;
     }
+  } else if (typeof base64Images === 'string' && base64Images) {
+    return base64Images;
+  }
+
+  const images = hotel?.main_image_url;
+  if (Array.isArray(images)) {
     const urlImage = images.find((item) => typeof item === 'string' && item);
     return urlImage || DEFAULT_IMAGE;
   }
