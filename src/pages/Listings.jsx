@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import CreateHotel from './CreateHotel';
 
 const API_BASE = 'http://localhost:5050';
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 const DEFAULT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="%23e2e8f0"/><path d="M180 280l90-110 90 110 60-70 110 130H180z" fill="%23cbd5f5"/><circle cx="420" cy="150" r="40" fill="%23cbd5f5"/></svg>';
 
 const STATUS_OPTIONS = [
@@ -40,6 +41,7 @@ const formatLocation = (locationInfo = {}) => {
 };
 
 export default function Listings() {
+  const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [hotels, setHotels] = useState([]);
@@ -186,6 +188,10 @@ export default function Listings() {
     return new Intl.NumberFormat('zh-CN').format(numberValue);
   };
 
+  if (isCreating) {
+    return <CreateHotel onBack={() => setIsCreating(false)} />;
+  }
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-8 bg-background-light dark:bg-slate-950">
@@ -236,7 +242,10 @@ export default function Listings() {
                     </div>
                   )}
                 </div>
-                <button className="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20 transition-all">
+                <button 
+                  className="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20 transition-all"
+                  onClick={() => setIsCreating(true)}
+                >
                   <span className="material-symbols-outlined text-lg">add</span>
                   添加新酒店
                 </button>
