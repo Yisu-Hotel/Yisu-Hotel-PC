@@ -137,7 +137,6 @@ Authorization: Bearer {token}
       "room_image_url": "https://example.com/room3.jpg",
       "room_image_base64": "data:image/png;base64,xxxx",
       "policies": {
-      "policies": {
         "cancellation": "入住前48小时可免费取消",
         "payment": "支持现金、信用卡、移动支付",
         "children": "12岁以下儿童可免费入住",
@@ -313,6 +312,7 @@ curl -X POST "http://localhost:{PORT}/hotel/create" \
           {"id": "workdesk", "name": "办公桌"}
         ],
         "room_image_url": "https://example.com/room1.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -343,6 +343,7 @@ curl -X POST "http://localhost:{PORT}/hotel/create" \
           {"id": "workdesk", "name": "办公桌"}
         ],
         "room_image_url": "https://example.com/room2.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -374,6 +375,7 @@ curl -X POST "http://localhost:{PORT}/hotel/create" \
           {"id": "sofa", "name": "沙发"}
         ],
         "room_image_url": "https://example.com/room3.jpg",
+        "room_image_base64": "data:image/png;base64,xxxx",
         "policies": {
           "cancellation": "入住前48小时可免费取消",
           "payment": "支持现金、信用卡、移动支付",
@@ -398,9 +400,6 @@ curl -X POST "http://localhost:{PORT}/hotel/create" \
       "https://example.com/hotel1.jpg",
       "https://example.com/hotel2.jpg",
       "https://example.com/hotel3.jpg"
-    ],
-    "main_image_base64": [
-      "data:image/png;base64,xxxx"
     ],
     "main_image_base64": [
       "data:image/png;base64,xxxx",

@@ -472,6 +472,10 @@ Authorization: Bearer {token}
     "account": "13800138000",
     "role": "merchant",
     "nickname": "张三",
+    "gender": "男",
+    "birthday": "1995-05-20",
+    "avatar": "https://example.com/avatar.jpg",
+    "avatar_base64": "data:image/png;base64,xxxx",
     "created_at": "2026-01-01T10:00:00.000Z",
     "updated_at": "2026-02-05T10:00:00.000Z"
   }
@@ -482,9 +486,13 @@ Authorization: Bearer {token}
 | 字段名 | 类型 | 说明 |
 |--------|------|------|
 | id | string | 用户ID（UUID） |
-| phone | string | 手机号 |
+| account | string | 手机号 |
 | role | string | 角色：merchant（商户）、admin（管理员） |
 | nickname | string | 昵称 |
+| gender | string | 性别（男、女、保密） |
+| birthday | string | 生日（YYYY-MM-DD） |
+| avatar | string | 头像URL |
+| avatar_base64 | string | 头像Base64 |
 | created_at | string | 创建时间 |
 | updated_at | string | 更新时间 |
 
@@ -517,7 +525,11 @@ Authorization: Bearer {token}
 **请求体:**
 ```json
 {
-  "nickname": "李四"
+  "nickname": "李四",
+  "gender": "男",
+  "birthday": "1995-05-20",
+  "avatar": "https://example.com/avatar.jpg",
+  "avatar_base64": "data:image/png;base64,xxxx"
 }
 ```
 
@@ -525,6 +537,10 @@ Authorization: Bearer {token}
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | nickname | string | 否 | 用户昵称，长度2-50字符 |
+| gender | string | 否 | 性别（男、女、保密） |
+| birthday | string | 否 | 生日（YYYY-MM-DD） |
+| avatar | string | 否 | 头像URL |
+| avatar_base64 | string | 否 | 头像Base64 |
 
 **响应示例:**
 ```json
@@ -555,5 +571,5 @@ Authorization: Bearer {token}
 curl -X PUT "http://localhost:{PORT}/user/profile" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {token}" \
-  -d '{"nickname": "李四"}'
+  -d '{"nickname": "李四", "gender": "男", "birthday": "1995-05-20", "avatar": "https://example.com/avatar.jpg", "avatar_base64": "data:image/png;base64,xxxx"}'
 ```
