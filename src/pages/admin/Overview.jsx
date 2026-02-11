@@ -31,7 +31,7 @@ export default function Overview() {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const user = useMemo(() => getStoredUser(), []);
-  const activeTab = searchParams.get('tab') || 'audits';
+  const activeTab = searchParams.get('tab') || 'listings';
 
   useEffect(() => {
     document.title = '管理员控制台 | EasyStay';
@@ -52,8 +52,8 @@ export default function Overview() {
   }, [token, user, navigate]);
 
   const menuItems = [
-    { key: 'audits', label: 'Audits' },
     { key: 'listings', label: 'Listings' },
+    { key: 'audits', label: 'Audits' },
     { key: 'settings', label: 'Settings' }
   ];
 
@@ -155,8 +155,8 @@ export default function Overview() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-          {activeTab === 'audits' && <Audits />}
           {activeTab === 'listings' && <Listings />}
+          {activeTab === 'audits' && <Audits />}
           {activeTab === 'settings' && <Settings />}
         </div>
       </main>

@@ -35,6 +35,9 @@ export default function Audits() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [hotels, setHotels] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [detailData, setDetailData] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [rejectReason, setRejectReason] = useState('');
@@ -126,6 +129,57 @@ export default function Audits() {
   };
 
   const canReject = rejectReason.trim().length > 0;
+
+  useEffect(() => {
+    if (!selectedHotelId) {
+      setDetailData(null);
+      setDetailError('');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setDetailError('请先登录');
+      setDetailData(null);
+      return;
+    }
+    let isActive = true;
+    setDetailLoading(true);
+    setDetailError('');
+    fetch(`${API_BASE}/admin/hotel/detail/${selectedHotelId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok || result.code !== 0) {
+          throw new Error(result.msg || '加载失败');
+        }
+        return result.data;
+      })
+      .then((data) => {
+        if (!isActive) {
+          return;
+        }
+        setDetailData(data || null);
+      })
+      .catch((fetchError) => {
+        if (!isActive) {
+          return;
+        }
+        setDetailError(fetchError.message || '加载失败');
+        setDetailData(null);
+      })
+      .finally(() => {
+        if (isActive) {
+          setDetailLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [selectedHotelId]);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden min-h-[640px]">
@@ -258,42 +312,223 @@ export default function Audits() {
 
           <div className="flex-1 overflow-y-auto p-6">
             {!selectedHotelId && <div className="text-sm text-slate-500">请选择左侧酒店查看详情</div>}
-            {selectedHotelId && (
+            {selectedHotelId && detailLoading && (
+              <div className="text-sm text-slate-500">正在加载酒店详情...</div>
+            )}
+            {selectedHotelId && !detailLoading && detailError && (
+              <div className="text-sm text-rose-500">{detailError}</div>
+            )}
+            {selectedHotelId && !detailLoading && !detailError && detailData && (
               <div className="space-y-6">
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 space-y-4">
                   <div>
                     <p className="text-xs text-slate-400">酒店ID</p>
-                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{selectedHotel.hotel_id || '--'}</p>
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{detailData.hotel_id || '--'}</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-slate-400">酒店名称</p>
-                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{selectedHotel.hotel_name_cn || '--'}</p>
-                      <p className="text-xs text-slate-500">{selectedHotel.hotel_name_en || '--'}</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{detailData.hotel_name_cn || '--'}</p>
+                      <p className="text-xs text-slate-500">{detailData.hotel_name_en || '--'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-400">状态</p>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${statusBadge(selectedHotel.status)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${statusBadge(detailData.status)}`}>
                         <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5"></span>
-                        {selectedHotel.status_text || statusText(selectedHotel.status)}
+                        {statusText(detailData.status)}
                       </span>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">提交时间</p>
-                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{formatDate(selectedHotel.submitted_at)}</p>
+                      <p className="text-xs text-slate-400">星级</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{detailData.star_rating || '--'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">联系电话</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{detailData.phone || '--'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">开业时间</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{detailData.opening_date || '--'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-400">提交人</p>
-                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{selectedHotel.submitted_by || '--'}</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{detailData.created_by || '--'}</p>
                     </div>
                     <div className="md:col-span-2">
                       <p className="text-xs text-slate-400">地址</p>
                       <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                        {formatLocation(selectedHotel.location_info).address || '--'}
+                        {formatLocation(detailData.location_info).address || '--'}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {formatLocation(selectedHotel.location_info).city || '--'} {formatLocation(selectedHotel.location_info).district || ''}
+                        {formatLocation(detailData.location_info).city || '--'} {formatLocation(detailData.location_info).district || ''}
                       </p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">酒店简介</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">{detailData.description || '--'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">酒店图片</p>
+                    <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {detailData.main_image_base64 && Array.isArray(detailData.main_image_base64) && detailData.main_image_base64.length > 0
+                        ? detailData.main_image_base64.map((src, index) => (
+                          <div key={`base64-${index}`} className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+                            <img src={src} alt={`hotel-base64-${index}`} className="w-full h-24 object-cover" />
+                          </div>
+                        ))
+                        : null}
+                      {detailData.main_image_url && Array.isArray(detailData.main_image_url) && detailData.main_image_url.length > 0
+                        ? detailData.main_image_url.map((src, index) => (
+                          <div key={`url-${index}`} className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+                            <img src={src} alt={`hotel-url-${index}`} className="w-full h-24 object-cover" />
+                          </div>
+                        ))
+                        : null}
+                      {(!detailData.main_image_base64 || detailData.main_image_base64.length === 0) &&
+                        (!detailData.main_image_url || detailData.main_image_url.length === 0) && (
+                        <p className="text-sm text-slate-500">--</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">周边信息</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">{detailData.nearby_info || '--'}</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-400">设施</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">
+                        {Array.isArray(detailData.facilities) && detailData.facilities.length
+                          ? detailData.facilities.map((item) => item.name || item.id).filter(Boolean).join('、')
+                          : '--'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">服务</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">
+                        {Array.isArray(detailData.services) && detailData.services.length
+                          ? detailData.services.map((item) => item.name || item.id).filter(Boolean).join('、')
+                          : '--'}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">标签</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">
+                      {Array.isArray(detailData.tags) && detailData.tags.length ? detailData.tags.join('、') : '--'}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-400">取消政策</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">{detailData.policies?.cancellation || '--'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">支付政策</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">{detailData.policies?.payment || '--'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">儿童政策</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">{detailData.policies?.children || '--'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">宠物政策</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200 mt-1">{detailData.policies?.pets || '--'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">房型价格</p>
+                    <div className="mt-2 space-y-2">
+                      {detailData.room_prices && Object.keys(detailData.room_prices).length ? (
+                        Object.entries(detailData.room_prices).map(([name, room]) => (
+                          <details key={name} className="group rounded-lg border border-slate-200 dark:border-slate-700">
+                            <summary className="cursor-pointer list-none px-3 py-2 flex items-center justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{name}</p>
+                                <p className="text-xs text-slate-500">
+                                  {room?.area ? `${room.area}㎡` : '--'} · {room?.bed_type || '--'}
+                                </p>
+                              </div>
+                              <span className="material-symbols-outlined text-base text-slate-400 group-open:rotate-180 transition-transform">expand_more</span>
+                            </summary>
+                            <div className="px-3 pb-3">
+                              <p className="text-xs text-slate-500 mt-1">{room?.description || '--'}</p>
+                              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-500">
+                                <div>
+                                  <p className="text-[10px] text-slate-400">标签</p>
+                                  <p className="mt-1">{room?.tags && room.tags.length ? room.tags.join('、') : '--'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-slate-400">设施</p>
+                                  <p className="mt-1">
+                                    {room?.facilities && room.facilities.length
+                                      ? room.facilities.map((item) => item.name || item.id).filter(Boolean).join('、')
+                                      : '--'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-slate-400">服务</p>
+                                  <p className="mt-1">
+                                    {room?.services && room.services.length
+                                      ? room.services.map((item) => item.name || item.id).filter(Boolean).join('、')
+                                      : '--'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-slate-400">政策</p>
+                                  <p className="mt-1">
+                                    {room?.policies?.cancellation || '--'} · {room?.policies?.payment || '--'}
+                                  </p>
+                                  <p className="mt-1">
+                                    {room?.policies?.children || '--'} · {room?.policies?.pets || '--'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {room?.room_image_base64 && Array.isArray(room.room_image_base64) && room.room_image_base64.length > 0
+                                  ? room.room_image_base64.map((src, index) => (
+                                    <div key={`${name}-base64-${index}`} className="rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+                                      <img src={src} alt={`${name}-base64-${index}`} className="w-full h-20 object-cover" />
+                                    </div>
+                                  ))
+                                  : null}
+                                {room?.room_image_url && Array.isArray(room.room_image_url) && room.room_image_url.length > 0
+                                  ? room.room_image_url.map((src, index) => (
+                                    <div key={`${name}-url-${index}`} className="rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+                                      <img src={src} alt={`${name}-url-${index}`} className="w-full h-20 object-cover" />
+                                    </div>
+                                  ))
+                                  : room?.room_image_url ? (
+                                    <div className="rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+                                      <img src={room.room_image_url} alt={`${name}-url`} className="w-full h-20 object-cover" />
+                                    </div>
+                                  ) : null}
+                                {room?.room_image_base64 && !Array.isArray(room.room_image_base64) && (
+                                  <div className="rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900">
+                                    <img src={room.room_image_base64} alt={`${name}-base64`} className="w-full h-20 object-cover" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="mt-3">
+                                <p className="text-[10px] text-slate-400">价格</p>
+                                <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {room?.prices && Object.keys(room.prices).length
+                                    ? Object.entries(room.prices).map(([date, price]) => (
+                                      <div key={`${name}-${date}`} className="flex items-center justify-between text-xs text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1">
+                                        <span>{date}</span>
+                                        <span>¥ {Number(price).toFixed(2)}</span>
+                                      </div>
+                                    ))
+                                    : <span className="text-xs text-slate-500">--</span>}
+                                </div>
+                              </div>
+                            </div>
+                          </details>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500">--</p>
+                      )}
                     </div>
                   </div>
                 </div>
