@@ -273,6 +273,8 @@ export default function Listings() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const statusRef = useRef(null);
+  const [editHotelId, setEditHotelId] = useState('');
+  const [editInitialData, setEditInitialData] = useState(null);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -447,6 +449,32 @@ export default function Listings() {
     setDetailLoading(false);
   };
 
+  const handleEdit = async (hotel) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('请先登录');
+      return;
+    }
+    if (!hotel?.hotel_id) {
+      alert('酒店ID无效');
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE}/hotel/detail/${hotel.hotel_id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (!response.ok || result.code !== 0) {
+        throw new Error(result.msg || '加载失败');
+      }
+      setEditHotelId(hotel.hotel_id);
+      setEditInitialData(result.data);
+      setIsCreating(true);
+    } catch (fetchError) {
+      alert(fetchError.message || '加载失败');
+    }
+  };
+
   const handleOpenDelete = (hotel) => {
     setDeleteHotelId(hotel?.hotel_id || '');
     setDeleteHotelName(hotel?.hotel_name_cn || '');
@@ -496,7 +524,17 @@ export default function Listings() {
   };
 
   if (isCreating) {
-    return <CreateHotel onBack={() => setIsCreating(false)} />;
+    return (
+      <CreateHotel
+        onBack={() => {
+          setIsCreating(false);
+          setEditHotelId('');
+          setEditInitialData(null);
+        }}
+        hotelId={editHotelId}
+        initialData={editInitialData}
+      />
+    );
   }
 
   return (
@@ -621,7 +659,7 @@ export default function Listings() {
                             </td>
                             <td className="px-6 py-5 text-right">
                               <div className="flex items-center justify-end gap-3 text-sm font-semibold">
-                                <button className="text-slate-500 hover:text-primary">编辑</button>
+                                <button className="text-slate-500 hover:text-primary" onClick={() => handleEdit(hotel)}>编辑</button>
                                 <button className="text-slate-500 hover:text-primary" onClick={() => handleViewDetail(hotel)}>查看详情</button>
                                 <button className="text-slate-500 hover:text-rose-500" onClick={() => handleOpenDelete(hotel)}>删除</button>
                               </div>
