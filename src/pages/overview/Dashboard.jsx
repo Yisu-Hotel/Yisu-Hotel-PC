@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+const API_BASE = 'http://localhost:5050';
 const DEFAULT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="%23e2e8f0"/><path d="M180 280l90-110 90 110 60-70 110 130H180z" fill="%23cbd5f5"/><circle cx="420" cy="150" r="40" fill="%23cbd5f5"/></svg>';
 
 const StatCard = ({ title, value, icon, loading }) => (
@@ -138,6 +139,150 @@ const HotelGrid = ({ hotels, loading, onImageError, onViewDetail }) => {
   );
 };
 
+const getRoomPriceRange = (prices) => {
+  const values = Object.values(prices || {}).map((value) => Number(value)).filter((value) => Number.isFinite(value));
+  if (values.length === 0) {
+    return '--';
+  }
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  if (minValue === maxValue) {
+    return minValue.toFixed(2);
+  }
+  return `${minValue.toFixed(2)} - ${maxValue.toFixed(2)}`;
+};
+
+const DetailModal = ({ open, loading, error, data, onClose, fallbackName }) => {
+  if (!open) {
+    return null;
+  }
+
+  const facilities = (data?.facilities || []).map((item) => item.name || item.id).filter(Boolean);
+  const services = (data?.services || []).map((item) => item.name || item.id).filter(Boolean);
+  const tags = data?.tags || [];
+  const roomEntries = Object.entries(data?.room_prices || {});
+  const policies = data?.policies || {};
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onClose}>
+      <div
+        className="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-slate-500">酒店详情</p>
+            <h4 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
+              {data?.hotel_name_cn || fallbackName || '未命名酒店'}
+            </h4>
+            <p className="text-xs text-slate-400">{data?.hotel_name_en || '--'}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${statusBadgeStyle(data?.status)}`}>
+              {data?.status || '--'}
+            </span>
+            <button type="button" className="text-sm font-semibold text-slate-500 hover:text-primary" onClick={onClose}>
+              关闭
+            </button>
+          </div>
+        </div>
+        {loading ? (
+          <div className="mt-6 space-y-3 animate-pulse">
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+          </div>
+        ) : error ? (
+          <div className="mt-6 text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/40 rounded-lg p-4">
+            {error}
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4 text-sm text-slate-600 dark:text-slate-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-slate-400">酒店ID</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.hotel_id || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">星级</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.star_rating || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">电话</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.phone || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">开业时间</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.opening_date || '--'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-xs text-slate-400">地址</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.location_info?.formatted_address || '--'}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">酒店描述</p>
+              <p className="mt-1 text-slate-700 dark:text-slate-200">{data?.description || '--'}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-slate-400">设施</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{facilities.length ? facilities.join('、') : '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">服务</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{services.length ? services.join('、') : '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">标签</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{tags.length ? tags.join('、') : '--'}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-slate-400">取消政策</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{policies.cancellation || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">支付政策</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{policies.payment || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">儿童政策</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{policies.children || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">宠物政策</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{policies.pets || '--'}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">房型价格</p>
+              <div className="mt-2 space-y-2">
+                {roomEntries.length ? roomEntries.map(([name, room]) => (
+                  <div key={name} className="p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                    <div className="flex flex-wrap items-center gap-2 justify-between">
+                      <p className="font-semibold text-slate-700 dark:text-slate-200">{name}</p>
+                      <span className="text-xs font-semibold text-primary">{getRoomPriceRange(room.prices)}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {room.bed_type || '--'} · {room.area ? `${room.area}㎡` : '--'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">{room.description || '--'}</p>
+                  </div>
+                )) : (
+                  <p className="text-slate-500">--</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function Dashboard({
   stats,
   previewHotels,
@@ -149,15 +294,53 @@ export default function Dashboard({
   onBack,
   onImageError
 }) {
-  const [selectedHotel, setSelectedHotel] = useState(null);
+  const [selectedHotelId, setSelectedHotelId] = useState('');
+  const [selectedHotelName, setSelectedHotelName] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [detailData, setDetailData] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  const handleViewDetail = (hotel) => {
-    setSelectedHotel(hotel);
+  const handleViewDetail = async (hotel) => {
+    const token = localStorage.getItem('token');
+    setSelectedHotelId(hotel?.hotel_id || '');
+    setSelectedHotelName(hotel?.hotel_name_cn || '');
+    setDetailError('');
+    setDetailData(null);
+    if (!token) {
+      setDetailLoading(false);
+      setDetailError('请先登录');
+      return;
+    }
+    if (!hotel?.hotel_id) {
+      setDetailLoading(false);
+      setDetailError('酒店ID无效');
+      return;
+    }
+    setDetailLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/hotel/detail/${hotel.hotel_id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (!response.ok || result.code !== 0) {
+        throw new Error(result.msg || '加载失败');
+      }
+      setDetailData(result.data);
+      setDetailError('');
+    } catch (fetchError) {
+      setDetailError(fetchError.message || '加载失败');
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handleCloseDetail = () => {
-    setSelectedHotel(null);
+    setSelectedHotelId('');
+    setSelectedHotelName('');
+    setDetailError('');
+    setDetailData(null);
+    setDetailLoading(false);
   };
 
   const handleOpenChat = () => {
@@ -168,37 +351,16 @@ export default function Dashboard({
     setIsChatOpen(false);
   };
 
-  const detailModal = selectedHotel ? (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-      onClick={handleCloseDetail}
-    >
-      <div
-        className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-6"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-slate-500">酒店详情</p>
-            <h4 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
-              {selectedHotel.hotel_name_cn || '未命名酒店'}
-            </h4>
-          </div>
-          <button
-            type="button"
-            className="text-sm font-semibold text-slate-500 hover:text-primary"
-            onClick={handleCloseDetail}
-          >
-            关闭
-          </button>
-        </div>
-        <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-          <p>内容待定</p>
-          <p>酒店ID：{selectedHotel.hotel_id || '--'}</p>
-        </div>
-      </div>
-    </div>
-  ) : null;
+  const detailModal = (
+    <DetailModal
+      open={Boolean(selectedHotelId)}
+      loading={detailLoading}
+      error={detailError}
+      data={detailData}
+      fallbackName={selectedHotelName}
+      onClose={handleCloseDetail}
+    />
+  );
 
   const chatPanel = isChatOpen ? (
     <div className="fixed inset-0 z-50">
