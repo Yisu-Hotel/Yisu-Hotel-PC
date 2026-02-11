@@ -40,11 +40,233 @@ const formatLocation = (locationInfo = {}) => {
   return { city, address };
 };
 
+const getRoomPriceRange = (prices) => {
+  const values = Object.values(prices || {}).map((value) => Number(value)).filter((value) => Number.isFinite(value));
+  if (values.length === 0) {
+    return '--';
+  }
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  if (minValue === maxValue) {
+    return minValue.toFixed(2);
+  }
+  return `${minValue.toFixed(2)} - ${maxValue.toFixed(2)}`;
+};
+
+const statusBadgeStyle = (status) => {
+  if (status === 'pending') {
+    return 'bg-amber-500 text-white';
+  }
+  if (status === 'approved') {
+    return 'bg-emerald-500 text-white';
+  }
+  if (status === 'rejected') {
+    return 'bg-rose-500 text-white';
+  }
+  if (status === 'draft') {
+    return 'bg-slate-500 text-white';
+  }
+  return 'bg-slate-400 text-white';
+};
+
+const DetailModal = ({ open, loading, error, data, onClose, fallbackName }) => {
+  if (!open) {
+    return null;
+  }
+
+  const facilities = (data?.facilities || []).map((item) => item.name || item.id).filter(Boolean);
+  const services = (data?.services || []).map((item) => item.name || item.id).filter(Boolean);
+  const tags = data?.tags || [];
+  const roomEntries = Object.entries(data?.room_prices || {});
+  const policies = data?.policies || {};
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onClose}>
+      <div
+        className="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-slate-500">酒店详情</p>
+            <h4 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
+              {data?.hotel_name_cn || fallbackName || '未命名酒店'}
+            </h4>
+            <p className="text-xs text-slate-400">{data?.hotel_name_en || '--'}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${statusBadgeStyle(data?.status)}`}>
+              {data?.status || '--'}
+            </span>
+            <button type="button" className="text-sm font-semibold text-slate-500 hover:text-primary" onClick={onClose}>
+              关闭
+            </button>
+          </div>
+        </div>
+        {loading ? (
+          <div className="mt-6 space-y-3 animate-pulse">
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+          </div>
+        ) : error ? (
+          <div className="mt-6 text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/40 rounded-lg p-4">
+            {error}
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4 text-sm text-slate-600 dark:text-slate-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-slate-400">酒店ID</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.hotel_id || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">星级</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.star_rating || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">电话</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.phone || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">开业时间</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.opening_date || '--'}</p>
+              </div>
+              <div className="md:col-span-2">
+                <p className="text-xs text-slate-400">地址</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-200">{data?.location_info?.formatted_address || '--'}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">酒店描述</p>
+              <p className="mt-1 text-slate-700 dark:text-slate-200">{data?.description || '--'}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-slate-400">设施</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{facilities.length ? facilities.join('、') : '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">服务</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{services.length ? services.join('、') : '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">标签</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{tags.length ? tags.join('、') : '--'}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-slate-400">取消政策</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{policies.cancellation || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">支付政策</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{policies.payment || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">儿童政策</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{policies.children || '--'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">宠物政策</p>
+                <p className="mt-1 text-slate-700 dark:text-slate-200">{policies.pets || '--'}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">房型价格</p>
+              <div className="mt-2 space-y-2">
+                {roomEntries.length ? roomEntries.map(([name, room]) => (
+                  <div key={name} className="p-3 rounded-lg border border-slate-200 dark:border-slate-800">
+                    <div className="flex flex-wrap items-center gap-2 justify-between">
+                      <p className="font-semibold text-slate-700 dark:text-slate-200">{name}</p>
+                      <span className="text-xs font-semibold text-primary">{getRoomPriceRange(room.prices)}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {room.bed_type || '--'} · {room.area ? `${room.area}㎡` : '--'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">{room.description || '--'}</p>
+                  </div>
+                )) : (
+                  <p className="text-slate-500">--</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const DeleteConfirmModal = ({ open, hotelName, loading, error, onCancel, onConfirm }) => {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onCancel}>
+      <div
+        className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-slate-500">删除酒店</p>
+            <h4 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
+              确认删除 {hotelName || '该酒店'}？
+            </h4>
+          </div>
+          <button type="button" className="text-sm font-semibold text-slate-500 hover:text-primary" onClick={onCancel}>
+            关闭
+          </button>
+        </div>
+        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+          删除后将无法恢复，请谨慎操作。
+        </p>
+        {error ? (
+          <div className="mt-4 text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/40 rounded-lg p-3">
+            {error}
+          </div>
+        ) : null}
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-primary"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            className="px-4 py-2 text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600 rounded-lg disabled:opacity-60"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? '删除中...' : '确认删除'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Listings() {
   const [isCreating, setIsCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [hotels, setHotels] = useState([]);
+  const [selectedHotelId, setSelectedHotelId] = useState('');
+  const [selectedHotelName, setSelectedHotelName] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const [detailData, setDetailData] = useState(null);
+  const [deleteHotelId, setDeleteHotelId] = useState('');
+  const [deleteHotelName, setDeleteHotelName] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [statusOpen, setStatusOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState(() => STATUS_OPTIONS.map((item) => item.value));
   const [searchValue, setSearchValue] = useState('');
@@ -183,6 +405,91 @@ export default function Listings() {
     setCurrentPage(nextPage);
   };
 
+  const handleViewDetail = async (hotel) => {
+    const token = localStorage.getItem('token');
+    setSelectedHotelId(hotel?.hotel_id || '');
+    setSelectedHotelName(hotel?.hotel_name_cn || '');
+    setDetailError('');
+    setDetailData(null);
+    if (!token) {
+      setDetailLoading(false);
+      setDetailError('请先登录');
+      return;
+    }
+    if (!hotel?.hotel_id) {
+      setDetailLoading(false);
+      setDetailError('酒店ID无效');
+      return;
+    }
+    setDetailLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/hotel/detail/${hotel.hotel_id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (!response.ok || result.code !== 0) {
+        throw new Error(result.msg || '加载失败');
+      }
+      setDetailData(result.data);
+      setDetailError('');
+    } catch (fetchError) {
+      setDetailError(fetchError.message || '加载失败');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedHotelId('');
+    setSelectedHotelName('');
+    setDetailError('');
+    setDetailData(null);
+    setDetailLoading(false);
+  };
+
+  const handleOpenDelete = (hotel) => {
+    setDeleteHotelId(hotel?.hotel_id || '');
+    setDeleteHotelName(hotel?.hotel_name_cn || '');
+    setDeleteError('');
+  };
+
+  const handleCloseDelete = () => {
+    setDeleteHotelId('');
+    setDeleteHotelName('');
+    setDeleteError('');
+    setDeleteLoading(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setDeleteError('请先登录');
+      return;
+    }
+    if (!deleteHotelId) {
+      setDeleteError('酒店ID无效');
+      return;
+    }
+    setDeleteLoading(true);
+    setDeleteError('');
+    try {
+      const response = await fetch(`${API_BASE}/hotel/delete/${deleteHotelId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (!response.ok || result.code !== 0) {
+        throw new Error(result.msg || '删除失败');
+      }
+      setHotels((prev) => (prev || []).filter((hotel) => hotel.hotel_id !== deleteHotelId));
+      handleCloseDelete();
+    } catch (fetchError) {
+      setDeleteError(fetchError.message || '删除失败');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const formatNumber = (value) => {
     const numberValue = Number(value) || 0;
     return new Intl.NumberFormat('zh-CN').format(numberValue);
@@ -315,8 +622,8 @@ export default function Listings() {
                             <td className="px-6 py-5 text-right">
                               <div className="flex items-center justify-end gap-3 text-sm font-semibold">
                                 <button className="text-slate-500 hover:text-primary">编辑</button>
-                                <button className="text-slate-500 hover:text-primary">查看详情</button>
-                                <button className="text-slate-500 hover:text-rose-500">删除</button>
+                                <button className="text-slate-500 hover:text-primary" onClick={() => handleViewDetail(hotel)}>查看详情</button>
+                                <button className="text-slate-500 hover:text-rose-500" onClick={() => handleOpenDelete(hotel)}>删除</button>
                               </div>
                             </td>
                           </tr>
@@ -353,6 +660,22 @@ export default function Listings() {
           </div>
         </div>
       </div>
+      <DetailModal
+        open={Boolean(selectedHotelId)}
+        loading={detailLoading}
+        error={detailError}
+        data={detailData}
+        fallbackName={selectedHotelName}
+        onClose={handleCloseDetail}
+      />
+      <DeleteConfirmModal
+        open={Boolean(deleteHotelId)}
+        hotelName={deleteHotelName}
+        loading={deleteLoading}
+        error={deleteError}
+        onCancel={handleCloseDelete}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
