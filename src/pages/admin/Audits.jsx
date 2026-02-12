@@ -38,6 +38,9 @@ export default function Audits() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [detailData, setDetailData] = useState(null);
+  const [actionLoading, setActionLoading] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
+  const [actionError, setActionError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [rejectReason, setRejectReason] = useState('');
@@ -54,18 +57,20 @@ export default function Audits() {
     [hotels, selectedHotelId]
   );
 
-  useEffect(() => {
+  const loadHotels = () => {
     const token = localStorage.getItem('token');
     if (!token) {
       setError('请先登录');
       setHotels([]);
       setSelectedHotelId('');
-      return;
+      return () => {};
     }
 
     let isActive = true;
     setLoading(true);
     setError('');
+    setActionMessage('');
+    setActionError('');
     fetch(`${API_BASE}/admin/hotel/audit-list?page=1&page_size=50&status=pending`, {
       headers: {
         Authorization: `Bearer ${token}`
@@ -104,7 +109,9 @@ export default function Audits() {
     return () => {
       isActive = false;
     };
-  }, []);
+  };
+
+  useEffect(() => loadHotels(), []);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -126,9 +133,56 @@ export default function Audits() {
   const handleSelectHotel = (hotelId) => {
     setSelectedHotelId(hotelId);
     setRejectReason('');
+    setActionMessage('');
+    setActionError('');
   };
 
   const canReject = rejectReason.trim().length > 0;
+
+  const submitAudit = async (status) => {
+    if (!selectedHotelId) {
+      setActionError('请选择酒店');
+      return;
+    }
+    if (status === 'rejected' && !canReject) {
+      setActionError('请输入驳回原因');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setActionError('请先登录');
+      return;
+    }
+    setActionLoading(status);
+    setActionMessage('');
+    setActionError('');
+    try {
+      const response = await fetch(`${API_BASE}/admin/hotel/batch-audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          hotel_ids: [selectedHotelId],
+          status,
+          reject_reason: status === 'rejected' ? rejectReason.trim() : undefined
+        })
+      });
+      const result = await response.json();
+      if (!response.ok || result.code !== 0) {
+        throw new Error(result.msg || '操作失败');
+      }
+      setActionMessage(status === 'approved' ? '已通过审核' : '已驳回');
+      setRejectReason('');
+      setDetailData(null);
+      loadHotels();
+    } catch (requestError) {
+      setActionError(requestError.message || '操作失败');
+    } finally {
+      setActionLoading('');
+    }
+  };
 
   useEffect(() => {
     if (!selectedHotelId) {
@@ -317,6 +371,12 @@ export default function Audits() {
             )}
             {selectedHotelId && !detailLoading && detailError && (
               <div className="text-sm text-rose-500">{detailError}</div>
+            )}
+            {selectedHotelId && !detailLoading && !detailError && actionMessage && (
+              <div className="text-sm text-emerald-600">{actionMessage}</div>
+            )}
+            {selectedHotelId && !detailLoading && !detailError && actionError && (
+              <div className="text-sm text-rose-500">{actionError}</div>
             )}
             {selectedHotelId && !detailLoading && !detailError && detailData && (
               <div className="space-y-6">
@@ -534,17 +594,23 @@ export default function Audits() {
                 </div>
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 space-y-4">
                   <div className="flex flex-wrap items-start gap-3">
-                    <button type="button" className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600">
-                      通过
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60"
+                      onClick={() => submitAudit('approved')}
+                      disabled={actionLoading === 'approved' || actionLoading === 'rejected'}
+                    >
+                      {actionLoading === 'approved' ? '提交中...' : '通过'}
                     </button>
                     <button
                       type="button"
                       className={`px-4 py-2 rounded-lg text-sm font-semibold ${
                         canReject ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-rose-200 text-rose-400 cursor-not-allowed'
                       }`}
-                      disabled={!canReject}
+                      onClick={() => submitAudit('rejected')}
+                      disabled={!canReject || actionLoading === 'approved' || actionLoading === 'rejected'}
                     >
-                      驳回
+                      {actionLoading === 'rejected' ? '提交中...' : '驳回'}
                     </button>
                     <div className="flex-1 min-w-[220px]">
                       <input

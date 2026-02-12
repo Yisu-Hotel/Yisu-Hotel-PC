@@ -43,6 +43,12 @@ export default function Listings() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [detailData, setDetailData] = useState(null);
+  const [actionLoadingId, setActionLoadingId] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [offlineOpen, setOfflineOpen] = useState(false);
+  const [offlineReason, setOfflineReason] = useState('');
+  const [offlineHotel, setOfflineHotel] = useState(null);
 
   const handleViewDetails = (hotel) => {
     if (!hotel?.hotel_id) {
@@ -82,12 +88,63 @@ export default function Listings() {
       });
   };
 
-  const handleTakeOffline = (hotel) => {
-    console.log('Take offline:', hotel);
+  const closeOfflineModal = () => {
+    setOfflineOpen(false);
+    setOfflineReason('');
+    setOfflineHotel(null);
+    setActionError('');
   };
 
-  const handleBringOnline = (hotel) => {
-    console.log('Bring online:', hotel);
+  const submitStatusChange = async ({ hotelId, status, rejectReason }) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setActionError('请先登录');
+      return false;
+    }
+    setActionLoadingId(hotelId);
+    setActionMessage('');
+    setActionError('');
+    try {
+      const response = await fetch(`${API_BASE}/admin/hotel/batch-audit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          hotel_ids: [hotelId],
+          status,
+          reject_reason: status === 'rejected' ? rejectReason : undefined
+        })
+      });
+      const result = await response.json();
+      if (!response.ok || result.code !== 0) {
+        throw new Error(result.msg || '操作失败');
+      }
+      setActionMessage(status === 'approved' ? '已重新上线' : '已下线');
+      return true;
+    } catch (requestError) {
+      setActionError(requestError.message || '操作失败');
+      return false;
+    } finally {
+      setActionLoadingId('');
+    }
+  };
+
+  const handleTakeOffline = (hotel) => {
+    setOfflineHotel(hotel);
+    setOfflineReason('');
+    setOfflineOpen(true);
+  };
+
+  const handleBringOnline = async (hotel) => {
+    if (!hotel?.hotel_id) {
+      return;
+    }
+    const success = await submitStatusChange({ hotelId: hotel.hotel_id, status: 'approved' });
+    if (success) {
+      loadHotels();
+    }
   };
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(hotels.length / pageSize)), [hotels, pageSize]);
@@ -97,18 +154,20 @@ export default function Listings() {
     return hotels.slice(start, start + pageSize);
   }, [hotels, currentPage, pageSize]);
 
-  useEffect(() => {
+  const loadHotels = () => {
     const token = localStorage.getItem('token');
     if (!token) {
       setError('请先登录');
       setHotels([]);
-      return;
+      return () => {};
     }
 
     const status = activeTab === 'online' ? 'approved' : 'rejected';
     let isActive = true;
     setLoading(true);
     setError('');
+    setActionMessage('');
+    setActionError('');
 
     fetch(`${API_BASE}/admin/hotel/audit-list?page=1&page_size=50&status=${status}`, {
       headers: {
@@ -145,7 +204,9 @@ export default function Listings() {
     return () => {
       isActive = false;
     };
-  }, [activeTab]);
+  };
+
+  useEffect(() => loadHotels(), [activeTab]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -157,6 +218,26 @@ export default function Listings() {
     setDetailOpen(false);
     setDetailError('');
     setDetailData(null);
+  };
+
+  const handleConfirmOffline = async () => {
+    if (!offlineHotel?.hotel_id) {
+      return;
+    }
+    const reason = offlineReason.trim();
+    if (!reason) {
+      setActionError('请输入下线原因');
+      return;
+    }
+    const success = await submitStatusChange({
+      hotelId: offlineHotel.hotel_id,
+      status: 'rejected',
+      rejectReason: reason
+    });
+    if (success) {
+      closeOfflineModal();
+      loadHotels();
+    }
   };
 
   return (
@@ -188,6 +269,16 @@ export default function Listings() {
 
       <div className="p-6">
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          {actionMessage && (
+            <div className="px-6 py-3 text-sm text-emerald-600 border-b border-slate-200 dark:border-slate-800">
+              {actionMessage}
+            </div>
+          )}
+          {actionError && (
+            <div className="px-6 py-3 text-sm text-rose-500 border-b border-slate-200 dark:border-slate-800">
+              {actionError}
+            </div>
+          )}
           {loading ? (
             <div className="p-12 flex flex-col items-center justify-center text-slate-500">
               <span className="material-symbols-outlined text-4xl mb-3 animate-spin">autorenew</span>
@@ -219,6 +310,7 @@ export default function Listings() {
                   {pagedHotels.map((hotel) => {
                     const statusConfig = STATUS_OPTIONS.find((item) => item.value === hotel.status);
                     const location = formatLocation(hotel.location_info);
+                    const isActionLoading = actionLoadingId === hotel.hotel_id;
                     return (
                       <tr key={hotel.hotel_id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                         <td className="px-6 py-5">
@@ -246,9 +338,21 @@ export default function Listings() {
                           <div className="flex items-center justify-end gap-3 text-sm font-semibold">
                             <button onClick={() => handleViewDetails(hotel)} className="text-slate-500 hover:text-primary">查看详情</button>
                             {activeTab === 'online' ? (
-                              <button onClick={() => handleTakeOffline(hotel)} className="text-slate-500 hover:text-rose-500">下线</button>
+                              <button
+                                onClick={() => handleTakeOffline(hotel)}
+                                className="text-slate-500 hover:text-rose-500 disabled:text-slate-300"
+                                disabled={isActionLoading}
+                              >
+                                {isActionLoading ? '处理中...' : '下线'}
+                              </button>
                             ) : (
-                              <button onClick={() => handleBringOnline(hotel)} className="text-slate-500 hover:text-emerald-500">重新上线</button>
+                              <button
+                                onClick={() => handleBringOnline(hotel)}
+                                className="text-slate-500 hover:text-emerald-500 disabled:text-slate-300"
+                                disabled={isActionLoading}
+                              >
+                                {isActionLoading ? '处理中...' : '重新上线'}
+                              </button>
                             )}
                           </div>
                         </td>
@@ -520,6 +624,54 @@ export default function Listings() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {offlineOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={closeOfflineModal}>
+          <div
+            className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm text-slate-500">酒店下线</p>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
+                  确认下线 {offlineHotel?.hotel_name_cn || '该酒店'}？
+                </h4>
+              </div>
+              <button type="button" className="text-sm font-semibold text-slate-500 hover:text-primary" onClick={closeOfflineModal}>
+                关闭
+              </button>
+            </div>
+            <div className="mt-4 space-y-2">
+              <label className="block text-xs font-semibold text-slate-500">下线原因</label>
+              <textarea
+                className="w-full min-h-[100px] px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm"
+                placeholder="请输入下线原因"
+                value={offlineReason}
+                onChange={(event) => setOfflineReason(event.target.value)}
+              />
+              {actionError && <p className="text-xs text-rose-500">{actionError}</p>}
+            </div>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-primary"
+                onClick={closeOfflineModal}
+                disabled={actionLoadingId === offlineHotel?.hotel_id}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600 rounded-lg disabled:opacity-60"
+                onClick={handleConfirmOffline}
+                disabled={!offlineReason.trim() || actionLoadingId === offlineHotel?.hotel_id}
+              >
+                {actionLoadingId === offlineHotel?.hotel_id ? '提交中...' : '确认下线'}
+              </button>
+            </div>
           </div>
         </div>
       )}
