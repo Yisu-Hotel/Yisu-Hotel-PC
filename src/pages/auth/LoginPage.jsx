@@ -20,13 +20,32 @@ function saveToken(token, user) {
   localStorage.setItem('user', JSON.stringify(user));
 }
 
+function clearToken() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+}
+
 function getToken() {
   return localStorage.getItem('token');
 }
 
 function getUser() {
   const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
+  if (!user) {
+    return null;
+  }
+  try {
+    return JSON.parse(user);
+  } catch (error) {
+    return null;
+  }
+}
+
+function getRolePath(role) {
+  if (role === 'admin') {
+    return '/admin';
+  }
+  return '/merchant';
 }
 
 export default function LoginPage() {
@@ -76,8 +95,10 @@ export default function LoginPage() {
   useEffect(() => {
     const token = getToken();
     const user = getUser();
-    if (token && user) {
-      navigate('/overview');
+    if (token && user?.role) {
+      navigate(getRolePath(user.role), { replace: true });
+    } else if (token || user) {
+      clearToken();
     }
   }, []);
 
@@ -215,8 +236,14 @@ export default function LoginPage() {
           saveToken(result.data.token, result.data.user);
         }
         showSuccess('登录成功');
+        const role = result.data?.user?.role;
+        if (!role) {
+          clearToken();
+          showError('无法识别用户身份');
+          return;
+        }
         redirectTimeoutRef.current = setTimeout(() => {
-          navigate('/overview');
+          navigate(getRolePath(role), { replace: true });
         }, 1000);
       } else {
         showError(result.msg || '登录失败');
@@ -293,8 +320,14 @@ export default function LoginPage() {
           saveToken(result.data.token, result.data.user);
         }
         showSuccess('注册成功');
+        const role = result.data?.user?.role;
+        if (!role) {
+          clearToken();
+          showError('无法识别用户身份');
+          return;
+        }
         redirectTimeoutRef.current = setTimeout(() => {
-          navigate('/overview');
+          navigate(getRolePath(role), { replace: true });
         }, 1000);
       } else {
         showError(result.msg || '注册失败');

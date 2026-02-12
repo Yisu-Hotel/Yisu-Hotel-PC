@@ -54,9 +54,24 @@ const fetchAllHotels = async (token) => {
   return { total, list };
 };
 
+const fetchMessages = async (token, page = 1) => {
+  const response = await fetch(`${API_BASE}/user/messages?page=${page}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const result = await response.json();
+  if (!response.ok || result.code !== 0) {
+    throw new Error(result.msg || '加载失败');
+  }
+  return result.data;
+};
+
 export default function Overview() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [messagePage, setMessagePage] = useState(1);
   const navigate = useNavigate();
   const token = getToken();
   const activeTab = searchParams.get('tab') || 'dashboard';
@@ -82,6 +97,17 @@ export default function Overview() {
   } = useSWR(
     token ? ['hotel-all', token] : null,
     () => fetchAllHotels(token)
+  );
+
+  const {
+    data: messagesData,
+    isLoading: messagesLoading,
+    error: messagesError,
+    mutate: refreshMessages
+  } = useSWR(
+    token && isNotificationsOpen ? ['messages', token, messagePage] : null,
+    () => fetchMessages(token, messagePage),
+    { revalidateOnFocus: false }
   );
 
   const stats = useMemo(() => {
@@ -149,6 +175,14 @@ export default function Overview() {
     navigate('/login', { replace: true });
   };
 
+  const toggleNotifications = () => {
+    setIsNotificationsOpen((prev) => !prev);
+    setMessagePage(1);
+  };
+
+  const totalMessagePages = messagesData?.total_pages || 1;
+  const messages = messagesData?.list || [];
+
   const previewHotels = useMemo(() => {
     if (!allHotels || !allHotels.list) {
       return [];
@@ -185,8 +219,11 @@ export default function Overview() {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-          <button className="w-full rounded-lg px-4 py-3 flex items-center gap-3 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors">
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 relative">
+          <button
+            className="w-full rounded-lg px-4 py-3 flex items-center gap-3 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors"
+            onClick={toggleNotifications}
+          >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
               <svg className="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
                 <path d="M12 3a6 6 0 0 1 6 6v3.5l1.6 2.7a1 1 0 0 1-.86 1.5H5.26a1 1 0 0 1-.86-1.5L6 12.5V9a6 6 0 0 1 6-6Z" stroke="currentColor" strokeWidth="1.5" />
@@ -195,6 +232,74 @@ export default function Overview() {
             </span>
             <span className="font-semibold">Notifications</span>
           </button>
+          {isNotificationsOpen && (
+            <div className="absolute left-0 right-0 bottom-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg max-h-[40rem] min-h-[28rem] overflow-y-auto">
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">消息通知</span>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-slate-500 hover:text-primary"
+                  onClick={() => refreshMessages()}
+                  disabled={messagesLoading}
+                >
+                  刷新
+                </button>
+              </div>
+              <div className="p-4 space-y-4 text-sm text-slate-600 dark:text-slate-300">
+                {messagesLoading && <div className="text-xs text-slate-500">正在加载消息...</div>}
+                {!messagesLoading && messagesError && (
+                  <div className="text-xs text-rose-500">{messagesError.message || '加载失败'}</div>
+                )}
+                {!messagesLoading && !messagesError && messages.length === 0 && (
+                  <div className="text-xs text-slate-500">暂无消息</div>
+                )}
+                {!messagesLoading && !messagesError && messages.length > 0 && (
+                  <div className="space-y-3">
+                    {messages.map((msg) => (
+                      <div key={msg.id} className="p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between text-xs text-slate-400">
+                          <span>{msg.sender || '系统'}</span>
+                          <span>{msg.created_at ? new Date(msg.created_at).toLocaleString('zh-CN', { hour12: false }) : '--'}</span>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            {msg.content?.hotel_name || '--'}（{msg.content?.status || '--'}）
+                          </div>
+                          <span className={`text-xs font-semibold ${msg.status === '已读' ? 'text-slate-400' : 'text-primary'}`}>
+                            {msg.status || '--'}
+                          </span>
+                        </div>
+                        {msg.content?.reject_reason && (
+                          <div className="mt-2 text-xs text-rose-500">原因：{msg.content.reject_reason}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                <span>第 {messagesData?.page || messagePage} / {totalMessagePages} 页</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+                    disabled={messagePage === 1}
+                    onClick={() => setMessagePage((page) => Math.max(1, page - 1))}
+                  >
+                    上一页
+                  </button>
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+                    disabled={messagePage === totalMessagePages}
+                    onClick={() => setMessagePage((page) => Math.min(totalMessagePages, page + 1))}
+                  >
+                    下一页
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 

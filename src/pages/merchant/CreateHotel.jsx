@@ -42,10 +42,11 @@ const ROOM_SERVICES_OPTIONS = [
   { id: 'butler', name: '管家服务' }
 ];
 
-export default function CreateHotel({ onBack }) {
+export default function CreateHotel({ onBack, hotelId, initialData }) {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeSection, setActiveSection] = useState('general'); // general, facilities, rooms
+  const isEditMode = Boolean(hotelId);
 
   // General Info State
   const [generalInfo, setGeneralInfo] = useState({
@@ -106,6 +107,71 @@ export default function CreateHotel({ onBack }) {
   const [roomTypes, setRoomTypes] = useState([]);
   // roomType structure: 
   // { id: tempId, name, bed_type, area, description, facilities: [], services: [], policies: {}, tags: [], images: [], prices: {} }
+
+  useEffect(() => {
+    if (!initialData) {
+      return;
+    }
+    const locationInfo = initialData.location_info || {};
+    setGeneralInfo({
+      hotel_name_cn: initialData.hotel_name_cn || '',
+      hotel_name_en: initialData.hotel_name_en || '',
+      star_rating: initialData.star_rating || 3,
+      description: initialData.description || '',
+      phone: initialData.phone || '',
+      opening_date: initialData.opening_date || new Date().toISOString().split('T')[0],
+      nearby_info: initialData.nearby_info || '',
+      tags: Array.isArray(initialData.tags) ? initialData.tags : [],
+      tagInput: '',
+      location_info: {
+        formatted_address: locationInfo.formatted_address || '',
+        country: locationInfo.country || '中国',
+        province: locationInfo.province || '',
+        city: locationInfo.city || '',
+        district: locationInfo.district || '',
+        street: locationInfo.street || '',
+        number: locationInfo.number || '',
+        location: locationInfo.location || ''
+      }
+    });
+
+    const facilities = (initialData.facilities || []).map((item) => item?.id || item).filter(Boolean);
+    const services = (initialData.services || []).map((item) => item?.id || item).filter(Boolean);
+    setSelectedFacilities(facilities);
+    setSelectedServices(services);
+
+    setPolicies({
+      cancellation: initialData.policies?.cancellation || '',
+      payment: initialData.policies?.payment || '',
+      children: initialData.policies?.children || '',
+      pets: initialData.policies?.pets || ''
+    });
+
+    const mainImages = Array.isArray(initialData.main_image_url) ? initialData.main_image_url : initialData.main_image_url ? [initialData.main_image_url] : [];
+    setHotelImages(mainImages.filter(Boolean).map((url) => ({ base64: url, url })));
+
+    const roomPrices = initialData.room_prices || {};
+    const rooms = Object.entries(roomPrices).map(([name, room], index) => ({
+      _tempId: Date.now() + index,
+      name: name || '',
+      bed_type: room?.bed_type || 'king',
+      area: room?.area || 30,
+      description: room?.description || '',
+      facilities: (room?.facilities || []).map((item) => item?.id || item).filter(Boolean),
+      services: (room?.services || []).map((item) => item?.id || item).filter(Boolean),
+      policies: {
+        cancellation: room?.policies?.cancellation || '',
+        payment: room?.policies?.payment || '',
+        children: room?.policies?.children || '',
+        pets: room?.policies?.pets || ''
+      },
+      tags: room?.tags || [],
+      tagInput: '',
+      images: room?.room_image_url ? [{ base64: room.room_image_url, url: room.room_image_url }] : [],
+      prices: room?.prices || {}
+    }));
+    setRoomTypes(rooms);
+  }, [initialData]);
 
   const handleGeneralChange = (field, value) => {
     setGeneralInfo(prev => ({ ...prev, [field]: value }));
@@ -238,17 +304,27 @@ export default function CreateHotel({ onBack }) {
   };
 
   const buildPayload = () => {
+    const mainImageBase64 = hotelImages
+      .map((img) => img.base64)
+      .filter((value) => typeof value === 'string' && value.startsWith('data:'));
+    const mainImageUrl = hotelImages
+      .map((img) => img.url)
+      .filter((value) => typeof value === 'string' && value && !value.startsWith('data:'));
+
     const payload = {
       ...generalInfo,
       star_rating: Number(generalInfo.star_rating),
       facilities: FACILITIES_OPTIONS.filter(f => selectedFacilities.includes(f.id)),
       services: SERVICES_OPTIONS.filter(s => selectedServices.includes(s.id)),
       policies,
-      main_image_base64: hotelImages.map(img => img.base64),
+      main_image_url: mainImageUrl,
+      main_image_base64: mainImageBase64,
       room_prices: {}
     };
 
     roomTypes.forEach(room => {
+      const roomImageBase64 = room.images[0]?.base64 && room.images[0].base64.startsWith('data:') ? room.images[0].base64 : '';
+      const roomImageUrl = room.images[0]?.url && !room.images[0].url.startsWith('data:') ? room.images[0].url : '';
       payload.room_prices[room.name] = {
         bed_type: room.bed_type,
         area: Number(room.area),
@@ -257,7 +333,8 @@ export default function CreateHotel({ onBack }) {
         services: ROOM_SERVICES_OPTIONS.filter(s => room.services.includes(s.id)),
         policies: room.policies,
         tags: room.tags,
-        room_image_base64: room.images[0]?.base64 || '',
+        room_image_url: roomImageUrl,
+        room_image_base64: roomImageBase64,
         prices: room.prices
       };
     });
@@ -280,20 +357,20 @@ export default function CreateHotel({ onBack }) {
     const payload = buildPayload();
 
     try {
-      const response = await fetch(`${API_BASE}/hotel/create`, {
-        method: 'POST',
+      const response = await fetch(isEditMode ? `${API_BASE}/hotel/update/${hotelId}` : `${API_BASE}/hotel/create`, {
+        method: isEditMode ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(isEditMode ? { ...payload, save_as_draft: false } : payload)
       });
       const result = await response.json();
       if (result.code === 0) {
-        alert('酒店创建成功！');
+        alert(isEditMode ? '酒店更新成功！' : '酒店创建成功！');
         onBack();
       } else {
-        alert(result.msg || '创建失败');
+        alert(result.msg || (isEditMode ? '更新失败' : '创建失败'));
       }
     } catch (error) {
       alert('网络错误');
@@ -311,8 +388,8 @@ export default function CreateHotel({ onBack }) {
     };
 
     try {
-      const response = await fetch(`${API_BASE}/hotel/create`, {
-        method: 'POST',
+      const response = await fetch(isEditMode ? `${API_BASE}/hotel/update/${hotelId}` : `${API_BASE}/hotel/create`, {
+        method: isEditMode ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -339,7 +416,7 @@ export default function CreateHotel({ onBack }) {
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <button onClick={onBack} className="hover:text-primary">Listings</button>
           <span className="material-symbols-outlined text-xs">chevron_right</span>
-          <span className="text-slate-900 dark:text-white font-bold">Create New Hotel</span>
+          <span className="text-slate-900 dark:text-white font-bold">{isEditMode ? 'Edit Hotel' : 'Create New Hotel'}</span>
         </div>
         <div className="flex gap-3">
             <button type="button" onClick={onBack} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
@@ -457,7 +534,7 @@ export default function CreateHotel({ onBack }) {
                         <h3 className="text-sm font-bold text-slate-900 mb-4">Hotel Images</h3>
                         <div className="grid grid-cols-3 gap-3">
                             {hotelImages.map((img, i) => (
-                                <div key={i} className="aspect-video bg-slate-100 rounded-lg bg-cover bg-center relative group" style={{ backgroundImage: `url(${img.base64})` }}>
+                                <div key={i} className="aspect-video bg-slate-100 rounded-lg bg-cover bg-center relative group" style={{ backgroundImage: `url(${img.base64 || img.url || DEFAULT_IMAGE})` }}>
                                     <button onClick={() => setHotelImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <span className="material-symbols-outlined text-[10px]">close</span>
                                     </button>
@@ -563,7 +640,7 @@ export default function CreateHotel({ onBack }) {
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Room Image</label>
                                         {room.images[0] ? (
-                                            <div className="aspect-video bg-cover bg-center rounded-lg relative group" style={{ backgroundImage: `url(${room.images[0].base64})` }}>
+                                            <div className="aspect-video bg-cover bg-center rounded-lg relative group" style={{ backgroundImage: `url(${room.images[0].base64 || room.images[0].url || DEFAULT_IMAGE})` }}>
                                                 <button onClick={() => {
                                                     const newRooms = [...roomTypes];
                                                     newRooms[index].images = [];
@@ -623,8 +700,11 @@ export default function CreateHotel({ onBack }) {
                                         <div className="overflow-x-auto border border-slate-200 rounded-lg">
                                             <div className="flex divide-x divide-slate-200">
                                                 {Array.from({ length: 7 }).map((_, dIdx) => {
-                                                    const date = new Date();
-                                                    date.setDate(date.getDate() + dIdx);
+                                                    const priceDates = Object.keys(room.prices || {}).sort();
+                                                    const baseDate = priceDates.length ? new Date(priceDates[0]) : new Date();
+                                                    const safeBaseDate = Number.isNaN(baseDate.getTime()) ? new Date() : baseDate;
+                                                    const date = new Date(safeBaseDate);
+                                                    date.setDate(safeBaseDate.getDate() + dIdx);
                                                     const dateStr = date.toISOString().split('T')[0];
                                                     const price = room.prices[dateStr] || '';
                                                     return (
