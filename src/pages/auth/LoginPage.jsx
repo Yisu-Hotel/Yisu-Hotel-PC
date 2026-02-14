@@ -84,7 +84,7 @@ export default function LoginPage() {
   const countdownRef = useRef(null);
 
   useEffect(() => {
-    document.title = '商户登录与注册 | EasyStay';
+    document.title = '商户登录与注册 | 易宿';
     document.documentElement.classList.add('light');
 
     return () => {
@@ -421,11 +421,11 @@ export default function LoginPage() {
                 <span className="material-symbols-outlined text-white text-3xl">domain</span>
               </div>
               <h1 className="text-2xl font-bold tracking-tight">
-                EasyStay <span className="font-light opacity-80">Merchant</span>
+                易宿 <span className="font-light opacity-80">商户平台</span>
               </h1>
             </div>
             <div className="max-w-md">
-              <h2 className="text-4xl font-extrabold mb-4 leading-tight">用 EasyStay 赋能您的酒店业务。</h2>
+              <h2 className="text-4xl font-extrabold mb-4 leading-tight">用易宿赋能您的酒店业务。</h2>
               <p className="text-lg text-slate-200 mb-8 font-light">
                 加入超过 5,000+ 家顶级酒店，使用我们的统一平台管理运营、预订和宾客体验。
               </p>
@@ -450,14 +450,14 @@ export default function LoginPage() {
                 </div>
               </div>
             </div>
-            <div className="text-xs text-slate-400">© 2024 EasyStay Management Systems Inc. All rights reserved.</div>
+            <div className="text-xs text-slate-400">© 2024 易宿管理系统有限公司。保留所有权利。</div>
           </div>
         </div>
         <div className="flex-1 flex flex-col bg-white dark:bg-slate-900 overflow-hidden">
           <div className="lg:hidden flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-primary font-bold">domain</span>
-              <h2 className="text-xl font-bold">EasyStay</h2>
+              <h2 className="text-xl font-bold">易宿</h2>
             </div>
             <button className="text-sm text-primary font-semibold" type="button">
               帮助中心

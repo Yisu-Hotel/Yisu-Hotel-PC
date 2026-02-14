@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const API_BASE = 'http://localhost:5050';
 const DEFAULT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="%23e2e8f0"/><path d="M180 280l90-110 90 110 60-70 110 130H180z" fill="%23cbd5f5"/><circle cx="420" cy="150" r="40" fill="%23cbd5f5"/></svg>';
+const CHAT_STORAGE_KEY = 'merchant_chat_history';
+const MAX_CHAT_ROUNDS = 10;
+const MAX_CHAT_MESSAGES = MAX_CHAT_ROUNDS * 2;
 
 const StatCard = ({ title, value, icon, loading }) => (
   <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -70,6 +73,8 @@ const resolveHotelImage = (hotel) => {
   return DEFAULT_IMAGE;
 };
 
+const trimChatMessages = (messages) => messages.slice(-MAX_CHAT_MESSAGES);
+
 const HotelGrid = ({ hotels, loading, onImageError, onViewDetail }) => {
   if (loading) {
     return (
@@ -117,19 +122,19 @@ const HotelGrid = ({ hotels, loading, onImageError, onViewDetail }) => {
             <div className="grid grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-center">
               <div className="flex flex-col items-center">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{hotel.booking_count}</span>
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Bookings</span>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">预订数</span>
               </div>
               <div className="flex flex-col items-center border-l border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{hotel.favorite_count}</span>
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Saves</span>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">收藏数</span>
               </div>
               <div className="flex flex-col items-center border-l border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{hotel.average_rating}</span>
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Rating</span>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">评分</span>
               </div>
               <div className="flex flex-col items-center border-l border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{hotel.review_count}</span>
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Reviews</span>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">评价数</span>
               </div>
             </div>
           </div>
@@ -300,6 +305,28 @@ export default function Dashboard({
   const [detailError, setDetailError] = useState('');
   const [detailData, setDetailData] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState(() => {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return trimChatMessages(parsed.filter((item) => item && typeof item === 'object' && typeof item.role === 'string' && typeof item.content === 'string'));
+    } catch (error) {
+      return [];
+    }
+  });
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages));
+  }, [chatMessages]);
 
   const handleViewDetail = async (hotel) => {
     const token = localStorage.getItem('token');
@@ -351,6 +378,109 @@ export default function Dashboard({
     setIsChatOpen(false);
   };
 
+  const submitChat = async () => {
+    if (chatLoading) {
+      return;
+    }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setChatError('请先登录');
+      return;
+    }
+    const content = chatInput.trim();
+    if (!content) {
+      return;
+    }
+    const nextMessages = trimChatMessages([
+      ...chatMessages,
+      { role: 'user', content }
+    ]);
+    const requestMessages = nextMessages.filter((message) => message.role !== 'tool');
+    setChatMessages(nextMessages);
+    setChatInput('');
+    setChatError('');
+    setChatLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          messages: requestMessages
+        })
+      });
+      const result = await response.json();
+      if (!response.ok || result.code !== 0) {
+        throw new Error(result.msg || 'AI服务异常');
+      }
+      const assistantContent = result?.data?.message?.content || '';
+      if (!assistantContent) {
+        throw new Error('AI服务返回为空');
+      }
+      const toolCalls = Array.isArray(result?.data?.tool_calls) ? result.data.tool_calls : [];
+      const toolMessages = toolCalls.flatMap((call) => {
+        const name = call?.name || 'knowledge_base_search';
+        const input = call?.input || {};
+        const output = call?.output || {};
+
+        let callContent = '';
+        let resultContent = '';
+
+        if (name === 'knowledge_base_search') {
+          callContent = `🔍 正在检索知识库：\n"${input.query || ''}"`;
+          const matches = output.matches || [];
+          if (matches.length > 0) {
+            resultContent = `✅ 找到 ${matches.length} 条相关参考：\n` +
+              matches.map((m, i) => `${i + 1}. 【${m.question}】\n   ${m.answer}`).join('\n\n');
+          } else {
+            resultContent = '❌ 未能在知识库中找到直接匹配的内容。';
+          }
+        } else {
+          // Fallback for other tools
+          const inputText = JSON.stringify(input, null, 2);
+          const outputText = JSON.stringify(output, null, 2);
+          callContent = `工具调用：${name}${inputText ? `\n${inputText}` : ''}`;
+          resultContent = `工具结果：${outputText || '无匹配结果'}`;
+        }
+
+        return [
+          { role: 'tool', content: callContent },
+          { role: 'tool', content: resultContent }
+        ];
+      });
+      setChatMessages(trimChatMessages([
+        ...nextMessages,
+        ...toolMessages,
+        { role: 'assistant', content: assistantContent }
+      ]));
+    } catch (fetchError) {
+      setChatError(fetchError.message || 'AI服务异常');
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleSendChat = (event) => {
+    event.preventDefault();
+    submitChat();
+  };
+
+  const handleChatKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      submitChat();
+    }
+  };
+
+  const handleClearChat = () => {
+    if (window.confirm('确定要清空目前的对话历史吗？')) {
+      setChatMessages([]);
+      setChatError('');
+    }
+  };
+
   const detailModal = (
     <DetailModal
       open={Boolean(selectedHotelId)}
@@ -375,10 +505,10 @@ export default function Dashboard({
               AI
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white leading-tight">EasyStay AI Assistant</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white leading-tight">易宿 AI 助手</h3>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Always Online</span>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">在线</span>
               </div>
             </div>
           </div>
@@ -390,7 +520,79 @@ export default function Dashboard({
             关闭
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto" />
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {chatMessages.length === 0 ? (
+            <div className="text-center text-sm text-slate-400">
+              先描述你的问题或需求，AI 将帮助你快速解答。
+            </div>
+          ) : (
+            chatMessages.map((message, index) => {
+              const isUser = message.role === 'user';
+              const isTool = message.role === 'tool';
+              return (
+                <div
+                  key={`${message.role}-${index}`}
+                  className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 leading-relaxed whitespace-pre-wrap ${
+                      isUser
+                        ? 'bg-primary text-white shadow-sm text-sm'
+                        : isTool
+                          ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[11px] border border-slate-100 dark:border-slate-800/50 italic'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm'
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                </div>
+              );
+            })
+          )}
+          {chatLoading ? (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-2xl px-4 py-3 text-xs text-slate-500 bg-slate-100 dark:bg-slate-800">
+                AI 正在思考...
+              </div>
+            </div>
+          ) : null}
+        </div>
+        {chatError ? (
+          <div className="px-6 pb-2 text-xs text-rose-500">
+            {chatError}
+          </div>
+        ) : null}
+        <form onSubmit={handleSendChat} className="border-t border-slate-100 dark:border-slate-800">
+          <div className="p-4 space-y-3">
+            <textarea
+              rows="3"
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              onKeyDown={handleChatKeyDown}
+              placeholder="输入你的问题，Enter 发送，Shift+Enter 换行"
+              className="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400">保留最近{MAX_CHAT_ROUNDS}轮对话</span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="text-xs text-slate-400 hover:text-rose-500 transition-colors"
+                  onClick={handleClearChat}
+                >
+                  清空对话
+                </button>
+                <button
+                  type="submit"
+                  disabled={chatLoading || !chatInput.trim()}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  发送
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
       </aside>
     </div>
   ) : null;
@@ -400,9 +602,9 @@ export default function Dashboard({
       <>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-slate-500">
-            <button className="hover:text-primary" onClick={onBack}>Dashboard</button>
+            <button className="hover:text-primary" onClick={onBack}>控制面板</button>
             <span>/</span>
-            <span className="text-slate-700 dark:text-slate-200">View All Properties</span>
+            <span className="text-slate-700 dark:text-slate-200">查看所有物业</span>
           </div>
           <button
             className="text-sm font-semibold text-primary hover:underline"
@@ -473,12 +675,12 @@ export default function Dashboard({
 
       <section>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-slate-800 dark:text-white">Property Overview</h3>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white">物业概览</h3>
           <button
             className="text-primary text-sm font-bold flex items-center gap-1 hover:underline"
             onClick={onViewAll}
           >
-            View All Properties
+            查看所有物业
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.6" />
             </svg>
@@ -511,7 +713,7 @@ export default function Dashboard({
             className="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary/90 shadow-md shadow-primary/20 transition-all"
             onClick={handleOpenChat}
           >
-            Chat Now
+            立即咨询
           </button>
         </div>
       </div>
