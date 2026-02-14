@@ -122,19 +122,19 @@ const HotelGrid = ({ hotels, loading, onImageError, onViewDetail }) => {
             <div className="grid grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-center">
               <div className="flex flex-col items-center">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{hotel.booking_count}</span>
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Bookings</span>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">预订数</span>
               </div>
               <div className="flex flex-col items-center border-l border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{hotel.favorite_count}</span>
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Saves</span>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">收藏数</span>
               </div>
               <div className="flex flex-col items-center border-l border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{hotel.average_rating}</span>
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Rating</span>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">评分</span>
               </div>
               <div className="flex flex-col items-center border-l border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{hotel.review_count}</span>
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Reviews</span>
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">评价数</span>
               </div>
             </div>
           </div>
@@ -505,10 +505,10 @@ export default function Dashboard({
               AI
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white leading-tight">EasyStay AI Assistant</h3>
+              <h3 className="font-bold text-slate-900 dark:text-white leading-tight">易宿 AI 助手</h3>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Always Online</span>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">在线</span>
               </div>
             </div>
           </div>
@@ -602,9 +602,9 @@ export default function Dashboard({
       <>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-slate-500">
-            <button className="hover:text-primary" onClick={onBack}>Dashboard</button>
+            <button className="hover:text-primary" onClick={onBack}>控制面板</button>
             <span>/</span>
-            <span className="text-slate-700 dark:text-slate-200">View All Properties</span>
+            <span className="text-slate-700 dark:text-slate-200">查看所有物业</span>
           </div>
           <button
             className="text-sm font-semibold text-primary hover:underline"
@@ -675,12 +675,12 @@ export default function Dashboard({
 
       <section>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-slate-800 dark:text-white">Property Overview</h3>
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white">物业概览</h3>
           <button
             className="text-primary text-sm font-bold flex items-center gap-1 hover:underline"
             onClick={onViewAll}
           >
-            View All Properties
+            查看所有物业
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
               <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.6" />
             </svg>
@@ -713,7 +713,7 @@ export default function Dashboard({
             className="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary/90 shadow-md shadow-primary/20 transition-all"
             onClick={handleOpenChat}
           >
-            Chat Now
+            立即咨询
           </button>
         </div>
       </div>

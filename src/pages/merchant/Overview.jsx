@@ -78,7 +78,7 @@ export default function Overview() {
   const view = searchParams.get('view') || '';
 
   useEffect(() => {
-    document.title = '商户控制台 | EasyStay';
+    document.title = '商户控制台 | 易宿';
     document.documentElement.classList.add('light');
     return () => {
       document.documentElement.classList.remove('light');
@@ -131,10 +131,10 @@ export default function Overview() {
   }, [allHotels]);
 
   const menuItems = [
-    { key: 'dashboard', label: 'Dashboard' },
-    { key: 'listings', label: 'Listings' },
-    { key: 'audits', label: 'Audits' },
-    { key: 'settings', label: 'Settings' }
+    { key: 'dashboard', label: '控制面板' },
+    { key: 'listings', label: '酒店列表' },
+    { key: 'audits', label: '审核记录' },
+    { key: 'settings', label: '设置中心' }
   ];
 
   const profileValue = (value) => {
@@ -197,8 +197,8 @@ export default function Overview() {
     <div className="flex h-screen bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
       <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
         <div className="p-6 flex items-center gap-3">
-          <div className="bg-primary p-2 rounded-lg text-white font-bold">ES</div>
-          <h1 className="text-xl font-bold tracking-tight">EasyStay</h1>
+          <div className="bg-primary p-2 rounded-lg text-white font-bold">易宿</div>
+          <h1 className="text-xl font-bold tracking-tight">商户平台</h1>
         </div>
         <nav className="flex-1 mt-4">
           {menuItems.map((item) => {
@@ -230,10 +230,10 @@ export default function Overview() {
                 <path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             </span>
-            <span className="font-semibold">Notifications</span>
+            <span className="font-semibold">消息通知</span>
           </button>
           {isNotificationsOpen && (
-            <div className="absolute left-0 right-0 bottom-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg max-h-[40rem] min-h-[28rem] flex flex-col overflow-hidden">
+            <div className="absolute left-0 right-0 bottom-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg max-h-[40rem] min-h-[28rem] flex flex-col overflow-hidden z-50">
               <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0 bg-white dark:bg-slate-900">
                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">消息通知</span>
                 <button
@@ -304,10 +304,10 @@ export default function Overview() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8">
+        <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 relative z-30">
           <div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Merchant Overview</h2>
-            <p className="text-sm text-slate-500">Welcome back</p>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">商户概览</h2>
+            <p className="text-sm text-slate-500">欢迎您！</p>
           </div>
           <div className="flex items-center gap-4 relative">
             <div className="text-right mr-2 hidden sm:block">
@@ -342,7 +342,7 @@ export default function Overview() {
               />
             </button>
             {isMenuOpen && (
-              <div className="absolute right-0 top-12 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg overflow-hidden">
+              <div className="absolute right-0 top-12 w-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg overflow-hidden z-50">
                 <div className="px-4 py-3 text-sm text-slate-500">用户菜单</div>
                 <button
                   className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
