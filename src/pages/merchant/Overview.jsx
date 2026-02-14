@@ -233,8 +233,8 @@ export default function Overview() {
             <span className="font-semibold">Notifications</span>
           </button>
           {isNotificationsOpen && (
-            <div className="absolute left-0 right-0 bottom-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg max-h-[40rem] min-h-[28rem] overflow-y-auto">
-              <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div className="absolute left-0 right-0 bottom-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg max-h-[40rem] min-h-[28rem] flex flex-col overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0 bg-white dark:bg-slate-900">
                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">消息通知</span>
                 <button
                   type="button"
@@ -245,7 +245,7 @@ export default function Overview() {
                   刷新
                 </button>
               </div>
-              <div className="p-4 space-y-4 text-sm text-slate-600 dark:text-slate-300">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm text-slate-600 dark:text-slate-300">
                 {messagesLoading && <div className="text-xs text-slate-500">正在加载消息...</div>}
                 {!messagesLoading && messagesError && (
                   <div className="text-xs text-rose-500">{messagesError.message || '加载失败'}</div>
@@ -277,12 +277,12 @@ export default function Overview() {
                   </div>
                 )}
               </div>
-              <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+              <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 flex-shrink-0 bg-slate-50 dark:bg-slate-800/50">
                 <span>第 {messagesData?.page || messagePage} / {totalMessagePages} 页</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+                    className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:opacity-50"
                     disabled={messagePage === 1}
                     onClick={() => setMessagePage((page) => Math.max(1, page - 1))}
                   >
@@ -290,7 +290,7 @@ export default function Overview() {
                   </button>
                   <button
                     type="button"
-                    className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 disabled:opacity-50"
+                    className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:opacity-50"
                     disabled={messagePage === totalMessagePages}
                     onClick={() => setMessagePage((page) => Math.min(totalMessagePages, page + 1))}
                   >

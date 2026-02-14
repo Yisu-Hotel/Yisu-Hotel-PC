@@ -395,6 +395,7 @@ export default function Dashboard({
       ...chatMessages,
       { role: 'user', content }
     ]);
+    const requestMessages = nextMessages.filter((message) => message.role !== 'tool');
     setChatMessages(nextMessages);
     setChatInput('');
     setChatError('');
@@ -407,7 +408,7 @@ export default function Dashboard({
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          messages: nextMessages
+          messages: requestMessages
         })
       });
       const result = await response.json();
@@ -418,8 +419,40 @@ export default function Dashboard({
       if (!assistantContent) {
         throw new Error('AI服务返回为空');
       }
+      const toolCalls = Array.isArray(result?.data?.tool_calls) ? result.data.tool_calls : [];
+      const toolMessages = toolCalls.flatMap((call) => {
+        const name = call?.name || 'knowledge_base_search';
+        const input = call?.input || {};
+        const output = call?.output || {};
+
+        let callContent = '';
+        let resultContent = '';
+
+        if (name === 'knowledge_base_search') {
+          callContent = `🔍 正在检索知识库：\n"${input.query || ''}"`;
+          const matches = output.matches || [];
+          if (matches.length > 0) {
+            resultContent = `✅ 找到 ${matches.length} 条相关参考：\n` +
+              matches.map((m, i) => `${i + 1}. 【${m.question}】\n   ${m.answer}`).join('\n\n');
+          } else {
+            resultContent = '❌ 未能在知识库中找到直接匹配的内容。';
+          }
+        } else {
+          // Fallback for other tools
+          const inputText = JSON.stringify(input, null, 2);
+          const outputText = JSON.stringify(output, null, 2);
+          callContent = `工具调用：${name}${inputText ? `\n${inputText}` : ''}`;
+          resultContent = `工具结果：${outputText || '无匹配结果'}`;
+        }
+
+        return [
+          { role: 'tool', content: callContent },
+          { role: 'tool', content: resultContent }
+        ];
+      });
       setChatMessages(trimChatMessages([
         ...nextMessages,
+        ...toolMessages,
         { role: 'assistant', content: assistantContent }
       ]));
     } catch (fetchError) {
@@ -493,22 +526,28 @@ export default function Dashboard({
               先描述你的问题或需求，AI 将帮助你快速解答。
             </div>
           ) : (
-            chatMessages.map((message, index) => (
-              <div
-                key={`${message.role}-${index}`}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+            chatMessages.map((message, index) => {
+              const isUser = message.role === 'user';
+              const isTool = message.role === 'tool';
+              return (
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                    message.role === 'user'
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
-                  }`}
+                  key={`${message.role}-${index}`}
+                  className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
                 >
-                  {message.content}
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 leading-relaxed whitespace-pre-wrap ${
+                      isUser
+                        ? 'bg-primary text-white shadow-sm text-sm'
+                        : isTool
+                          ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[11px] border border-slate-100 dark:border-slate-800/50 italic'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm'
+                    }`}
+                  >
+                    {message.content}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           {chatLoading ? (
             <div className="flex justify-start">
