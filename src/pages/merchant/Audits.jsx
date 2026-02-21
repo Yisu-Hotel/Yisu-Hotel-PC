@@ -5,7 +5,7 @@ const PAGE_SIZE = 20;
 const STATUS_OPTIONS = [
   { value: 'all', label: '全部状态' },
   { value: 'pending', label: '待审核' },
-  { value: 'approved', label: '已通过' },
+  { value: 'published', label: '已发布' },
   { value: 'rejected', label: '已拒绝' }
 ];
 const SORT_OPTIONS = [
@@ -22,14 +22,14 @@ const HOTEL_PAGE_SIZE = 100;
 
 const statusBadge = (status) => {
   if (status === 'pending') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
-  if (status === 'approved') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+  if (status === 'published') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
   if (status === 'rejected') return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400';
   return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
 };
 
 const statusText = (status) => {
   if (status === 'pending') return '待审核';
-  if (status === 'approved') return '已通过';
+  if (status === 'published') return '已发布';
   if (status === 'rejected') return '已拒绝';
   if (status === 'draft') return '草稿';
   return status || '-';
@@ -70,7 +70,7 @@ export default function Audits() {
   const rawHotels = useMemo(() => hotelData?.list || [], [hotelData]);
 
   const filteredHotels = useMemo(() => {
-    const allowedStatuses = new Set(['pending', 'approved', 'rejected']);
+    const allowedStatuses = new Set(['pending', 'published', 'rejected']);
     const baseList = rawHotels.filter((hotel) => allowedStatuses.has(hotel.status));
     const search = normalizeKeyword(deferredKeyword);
     const filtered = baseList.filter((hotel) => {
@@ -170,7 +170,7 @@ export default function Audits() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">酒店审核列表</h3>
-                  <p className="text-xs text-slate-500">仅展示待审核 / 已通过 / 已拒绝的酒店</p>
+                  <p className="text-xs text-slate-500">仅展示待审核 / 已发布 / 已拒绝的酒店</p>
                 </div>
                 <button
                   type="button"

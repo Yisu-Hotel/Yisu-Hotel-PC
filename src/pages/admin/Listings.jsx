@@ -9,7 +9,7 @@ const tabs = [
 const STATUS_OPTIONS = [
   { value: 'pending', label: '待审核', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   { value: 'auditing', label: '审核中', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'approved', label: '已通过', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  { value: 'published', label: '已发布', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
   { value: 'rejected', label: '已拒绝', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' }
 ];
 
@@ -99,7 +99,7 @@ export default function Listings() {
         status,
         rejectReason: status === 'rejected' ? rejectReason : undefined
       });
-      setActionMessage(status === 'approved' ? '已重新上线' : '已下线');
+      setActionMessage(status === 'published' ? '已重新上线' : '已下线');
       return true;
     } catch (requestError) {
       setActionError(requestError.message || '操作失败');
@@ -119,7 +119,7 @@ export default function Listings() {
     if (!hotel?.hotel_id) {
       return;
     }
-    const success = await submitStatusChange({ hotelId: hotel.hotel_id, status: 'approved' });
+    const success = await submitStatusChange({ hotelId: hotel.hotel_id, status: 'published' });
     if (success) {
       loadHotels();
     }
@@ -140,7 +140,7 @@ export default function Listings() {
       return () => {};
     }
 
-    const status = activeTab === 'online' ? 'approved' : 'rejected';
+    const status = activeTab === 'online' ? 'published' : 'rejected';
     let isActive = true;
     setLoading(true);
     setError('');

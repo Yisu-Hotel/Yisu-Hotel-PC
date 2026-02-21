@@ -62,17 +62,17 @@ export default function Overview() {
         totalFavorites: 0,
         totalBookings: 0,
         totalHotels: 0,
-        approvedHotels: 0
+        publishedHotels: 0
       };
     }
     const totalFavorites = allHotels.list.reduce((sum, item) => sum + (Number(item.favorite_count) || 0), 0);
     const totalBookings = allHotels.list.reduce((sum, item) => sum + (Number(item.booking_count) || 0), 0);
-    const approvedHotels = allHotels.list.filter((item) => item.status === 'approved').length;
+    const publishedHotels = allHotels.list.filter((item) => item.status === 'published').length;
     return {
       totalFavorites,
       totalBookings,
       totalHotels: allHotels.total || 0,
-      approvedHotels
+      publishedHotels
     };
   }, [allHotels]);
 

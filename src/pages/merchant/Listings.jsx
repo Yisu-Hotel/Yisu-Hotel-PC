@@ -7,7 +7,7 @@ const DEFAULT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/200
 const STATUS_OPTIONS = [
   { value: 'draft', label: '草稿', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400' },
   { value: 'pending', label: '待审核', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'approved', label: '已通过', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  { value: 'published', label: '已发布', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
   { value: 'rejected', label: '已拒绝', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' }
 ];
 
@@ -56,7 +56,7 @@ const statusBadgeStyle = (status) => {
   if (status === 'pending') {
     return 'bg-amber-500 text-white';
   }
-  if (status === 'approved') {
+  if (status === 'published') {
     return 'bg-emerald-500 text-white';
   }
   if (status === 'rejected') {

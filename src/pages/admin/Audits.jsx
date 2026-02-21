@@ -3,14 +3,14 @@ import { fetchAdminAuditList, fetchAdminHotelDetail, submitAdminHotelAudit } fro
 
 const statusBadge = (status) => {
   if (status === 'pending') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
-  if (status === 'approved') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+  if (status === 'published') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
   if (status === 'rejected') return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400';
   return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
 };
 
 const statusText = (status) => {
   if (status === 'pending') return '待审核';
-  if (status === 'approved') return '已通过';
+  if (status === 'published') return '已发布';
   if (status === 'rejected') return '已拒绝';
   return status || '-';
 };
@@ -151,7 +151,7 @@ export default function Audits() {
         status,
         rejectReason: status === 'rejected' ? rejectReason.trim() : undefined
       });
-      setActionMessage(status === 'approved' ? '已通过审核' : '已驳回');
+      setActionMessage(status === 'published' ? '已发布' : '已驳回');
       setRejectReason('');
       setDetailData(null);
       loadHotels();
@@ -211,7 +211,7 @@ export default function Audits() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">酒店审核列表</h3>
-                  <p className="text-xs text-slate-500">展示待审核 / 已通过 / 已拒绝的酒店</p>
+                  <p className="text-xs text-slate-500">展示待审核 / 已发布 / 已拒绝的酒店</p>
                 </div>
                 <button type="button" className="text-xs font-semibold text-primary/70 cursor-not-allowed" disabled>
                   刷新
@@ -564,10 +564,10 @@ export default function Audits() {
                     <button
                       type="button"
                       className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60"
-                      onClick={() => submitAudit('approved')}
-                      disabled={actionLoading === 'approved' || actionLoading === 'rejected'}
+                      onClick={() => submitAudit('published')}
+                      disabled={actionLoading === 'published' || actionLoading === 'rejected'}
                     >
-                      {actionLoading === 'approved' ? '提交中...' : '通过'}
+                      {actionLoading === 'published' ? '提交中...' : '发布'}
                     </button>
                     <button
                       type="button"
@@ -575,7 +575,7 @@ export default function Audits() {
                         canReject ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-rose-200 text-rose-400 cursor-not-allowed'
                       }`}
                       onClick={() => submitAudit('rejected')}
-                      disabled={!canReject || actionLoading === 'approved' || actionLoading === 'rejected'}
+                      disabled={!canReject || actionLoading === 'published' || actionLoading === 'rejected'}
                     >
                       {actionLoading === 'rejected' ? '提交中...' : '驳回'}
                     </button>

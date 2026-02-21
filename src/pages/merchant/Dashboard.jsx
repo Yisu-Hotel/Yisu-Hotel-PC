@@ -38,7 +38,7 @@ const statusBadgeStyle = (status) => {
   if (status === 'pending') {
     return 'bg-amber-500 text-white';
   }
-  if (status === 'approved') {
+  if (status === 'published') {
     return 'bg-emerald-500 text-white';
   }
   if (status === 'rejected') {
@@ -644,8 +644,8 @@ export default function Dashboard({
           )}
         />
         <StatCard
-          title="已通过审核"
-          value={error ? '--' : stats.approvedHotels}
+          title="已发布"
+          value={error ? '--' : stats.publishedHotels}
           loading={loading}
           icon={(
             <svg className="h-5 w-5 text-amber-500" viewBox="0 0 24 24" fill="none">
