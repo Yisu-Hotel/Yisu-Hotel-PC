@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import CreateHotel from './CreateHotel';
-
-const API_BASE = 'http://localhost:5050';
+import { deleteHotel, fetchHotelDetail, fetchHotelPage } from '../../utils/api';
 const PAGE_SIZE = 10;
 const DEFAULT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="%23e2e8f0"/><path d="M180 280l90-110 90 110 60-70 110 130H180z" fill="%23cbd5f5"/><circle cx="420" cy="150" r="40" fill="%23cbd5f5"/></svg>';
 
@@ -291,22 +290,11 @@ export default function Listings() {
       return;
     }
 
-    const fetchHotelPage = async (page, size) => {
-      const response = await fetch(`${API_BASE}/hotel/list?page=${page}&size=${size}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const result = await response.json();
-      if (!response.ok || result.code !== 0) {
-        throw new Error(result.msg || '加载失败');
-      }
-      return result.data;
-    };
+    const fetchPage = (page, size) => fetchHotelPage({ token, page, size });
 
     let isActive = true;
     setLoading(true);
-    fetchHotelPage(1, 100)
+    fetchPage(1, 100)
       .then(async (firstPage) => {
         const total = firstPage.total || 0;
         const totalPages = Math.max(1, Math.ceil(total / 100));
@@ -314,7 +302,7 @@ export default function Listings() {
           return firstPage.list || [];
         }
         const restPages = await Promise.all(
-          Array.from({ length: totalPages - 1 }).map((_, index) => fetchHotelPage(index + 2, 100))
+          Array.from({ length: totalPages - 1 }).map((_, index) => fetchPage(index + 2, 100))
         );
         const list = [firstPage.list || [], ...restPages.map((page) => page.list || [])].flat();
         return list;
@@ -425,14 +413,8 @@ export default function Listings() {
     }
     setDetailLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/hotel/detail/${hotel.hotel_id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const result = await response.json();
-      if (!response.ok || result.code !== 0) {
-        throw new Error(result.msg || '加载失败');
-      }
-      setDetailData(result.data);
+      const data = await fetchHotelDetail({ token, hotelId: hotel.hotel_id });
+      setDetailData(data);
       setDetailError('');
     } catch (fetchError) {
       setDetailError(fetchError.message || '加载失败');
@@ -460,15 +442,9 @@ export default function Listings() {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE}/hotel/detail/${hotel.hotel_id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const result = await response.json();
-      if (!response.ok || result.code !== 0) {
-        throw new Error(result.msg || '加载失败');
-      }
       setEditHotelId(hotel.hotel_id);
-      setEditInitialData(result.data);
+      const data = await fetchHotelDetail({ token, hotelId: hotel.hotel_id });
+      setEditInitialData(data);
       setIsCreating(true);
     } catch (fetchError) {
       alert(fetchError.message || '加载失败');
@@ -501,14 +477,7 @@ export default function Listings() {
     setDeleteLoading(true);
     setDeleteError('');
     try {
-      const response = await fetch(`${API_BASE}/hotel/delete/${deleteHotelId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const result = await response.json();
-      if (!response.ok || result.code !== 0) {
-        throw new Error(result.msg || '删除失败');
-      }
+      await deleteHotel({ token, hotelId: deleteHotelId });
       setHotels((prev) => (prev || []).filter((hotel) => hotel.hotel_id !== deleteHotelId));
       handleCloseDelete();
     } catch (fetchError) {

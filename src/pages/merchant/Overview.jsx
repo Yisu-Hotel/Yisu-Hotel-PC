@@ -5,67 +5,13 @@ import Dashboard from './Dashboard';
 import Listings from './Listings';
 import Audits from './Audits';
 import Settings from './Settings';
-
-const API_BASE = 'http://localhost:5050';
+import { fetchAllHotels, fetchMessages, fetchUserProfile } from '../../utils/api';
 const PAGE_SIZE = 100;
 const PREVIEW_COUNT = 4;
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?q=80&w=200&auto=format&fit=facearea&facepad=2&h=200';
 const DEFAULT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="%23e2e8f0"/><path d="M180 280l90-110 90 110 60-70 110 130H180z" fill="%23cbd5f5"/><circle cx="420" cy="150" r="40" fill="%23cbd5f5"/></svg>';
 
 const getToken = () => localStorage.getItem('token');
-
-const fetchProfile = async (token) => {
-  const response = await fetch(`${API_BASE}/user/profile`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-  const result = await response.json();
-  if (!response.ok || result.code !== 0) {
-    throw new Error(result.msg || '加载失败');
-  }
-  return result.data;
-};
-
-const fetchHotelPage = async (token, page, size) => {
-  const response = await fetch(`${API_BASE}/hotel/list?page=${page}&size=${size}`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-  const result = await response.json();
-  if (!response.ok || result.code !== 0) {
-    throw new Error(result.msg || '加载失败');
-  }
-  return result.data;
-};
-
-const fetchAllHotels = async (token) => {
-  const firstPage = await fetchHotelPage(token, 1, PAGE_SIZE);
-  const total = firstPage.total || 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  if (totalPages === 1) {
-    return { total, list: firstPage.list || [] };
-  }
-  const restPages = await Promise.all(
-    Array.from({ length: totalPages - 1 }).map((_, index) => fetchHotelPage(token, index + 2, PAGE_SIZE))
-  );
-  const list = [firstPage.list || [], ...restPages.map((page) => page.list || [])].flat();
-  return { total, list };
-};
-
-const fetchMessages = async (token, page = 1) => {
-  const response = await fetch(`${API_BASE}/user/messages?page=${page}`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-  const result = await response.json();
-  if (!response.ok || result.code !== 0) {
-    throw new Error(result.msg || '加载失败');
-  }
-  return result.data;
-};
 
 export default function Overview() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -87,7 +33,7 @@ export default function Overview() {
 
   const { data: profile, isLoading: profileLoading, error: profileError } = useSWR(
     token ? ['profile', token] : null,
-    () => fetchProfile(token)
+    () => fetchUserProfile(token)
   );
 
   const {
@@ -96,7 +42,7 @@ export default function Overview() {
     error: allHotelsError
   } = useSWR(
     token ? ['hotel-all', token] : null,
-    () => fetchAllHotels(token)
+    () => fetchAllHotels({ token, pageSize: PAGE_SIZE })
   );
 
   const {
@@ -106,7 +52,7 @@ export default function Overview() {
     mutate: refreshMessages
   } = useSWR(
     token && isNotificationsOpen ? ['messages', token, messagePage] : null,
-    () => fetchMessages(token, messagePage),
+    () => fetchMessages({ token, page: messagePage }),
     { revalidateOnFocus: false }
   );
 

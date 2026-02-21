@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const API_BASE = 'http://localhost:5050';
+import { checkAccountAvailable, login, register, resetPassword, sendAuthCode } from '../../utils/api';
 
 function validatePhone(phone) {
   return /^1[3-9]\d{9}$/.test(phone);
@@ -165,15 +164,7 @@ export default function LoginPage() {
 
   async function sendCode(phone, type) {
     try {
-      const response = await fetch(`${API_BASE}/auth/send-code`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone, type }),
-      });
-
-      const result = await response.json();
+      const { result } = await sendAuthCode(phone, type);
       if (result.code === 0) {
         showSuccess('验证码已发送');
         return true;
@@ -187,19 +178,7 @@ export default function LoginPage() {
   }
 
   async function checkAccount(phone) {
-    try {
-      const response = await fetch(`${API_BASE}/auth/check-account`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phone }),
-      });
-      const result = await response.json();
-      return result.data && result.data.available;
-    } catch (error) {
-      return false;
-    }
+    return checkAccountAvailable(phone);
   }
 
   const handleLoginSubmit = async (event) => {
@@ -222,15 +201,7 @@ export default function LoginPage() {
         requestBody.token_expires_in = 60 * 60 * 24 * 30;
       }
 
-      const response = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const result = await response.json();
+      const { result } = await login(requestBody);
       if (result.code === 0) {
         if (result.data?.token && result.data?.user) {
           saveToken(result.data.token, result.data.user);
@@ -300,21 +271,13 @@ export default function LoginPage() {
 
     setIsRegisterSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: registerPhone,
-          password: registerPassword,
-          code: registerCode,
-          role: registerRole,
-          agreed: registerAgreed,
-        }),
+      const { result } = await register({
+        phone: registerPhone,
+        password: registerPassword,
+        code: registerCode,
+        role: registerRole,
+        agreed: registerAgreed
       });
-
-      const result = await response.json();
       if (result.code === 0) {
         if (result.data?.token && result.data?.user) {
           saveToken(result.data.token, result.data.user);
@@ -373,19 +336,11 @@ export default function LoginPage() {
 
     setIsForgotSubmitting(true);
     try {
-      const response = await fetch(`${API_BASE}/auth/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: forgotPhone,
-          code: forgotCode,
-          new_password: forgotPassword,
-        }),
+      const { result } = await resetPassword({
+        phone: forgotPhone,
+        code: forgotCode,
+        new_password: forgotPassword
       });
-
-      const result = await response.json();
       if (result.code === 0) {
         showSuccess('密码重置成功');
         resetTimeoutRef.current = setTimeout(() => {

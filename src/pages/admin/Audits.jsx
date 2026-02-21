@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-
-const API_BASE = 'http://localhost:5050';
+import { fetchAdminAuditList, fetchAdminHotelDetail, submitAdminHotelAudit } from '../../utils/api';
 
 const statusBadge = (status) => {
   if (status === 'pending') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
@@ -71,18 +70,7 @@ export default function Audits() {
     setError('');
     setActionMessage('');
     setActionError('');
-    fetch(`${API_BASE}/admin/hotel/audit-list?page=1&page_size=50&status=pending`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok || result.code !== 0) {
-          throw new Error(result.msg || '加载失败');
-        }
-        return result.data;
-      })
+    fetchAdminAuditList({ token, status: 'pending', page: 1, pageSize: 50 })
       .then((data) => {
         if (!isActive) {
           return;
@@ -157,22 +145,12 @@ export default function Audits() {
     setActionMessage('');
     setActionError('');
     try {
-      const response = await fetch(`${API_BASE}/admin/hotel/batch-audit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          hotel_ids: [selectedHotelId],
-          status,
-          reject_reason: status === 'rejected' ? rejectReason.trim() : undefined
-        })
+      await submitAdminHotelAudit({
+        token,
+        hotelIds: [selectedHotelId],
+        status,
+        rejectReason: status === 'rejected' ? rejectReason.trim() : undefined
       });
-      const result = await response.json();
-      if (!response.ok || result.code !== 0) {
-        throw new Error(result.msg || '操作失败');
-      }
       setActionMessage(status === 'approved' ? '已通过审核' : '已驳回');
       setRejectReason('');
       setDetailData(null);
@@ -199,18 +177,7 @@ export default function Audits() {
     let isActive = true;
     setDetailLoading(true);
     setDetailError('');
-    fetch(`${API_BASE}/admin/hotel/detail/${selectedHotelId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok || result.code !== 0) {
-          throw new Error(result.msg || '加载失败');
-        }
-        return result.data;
-      })
+    fetchAdminHotelDetail({ token, hotelId: selectedHotelId })
       .then((data) => {
         if (!isActive) {
           return;

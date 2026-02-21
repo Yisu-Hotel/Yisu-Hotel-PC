@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-
-const API_BASE = 'http://localhost:5050';
+import { fetchAdminAuditList, fetchAdminHotelDetail, submitAdminHotelAudit } from '../../utils/api';
 
 const tabs = [
   { key: 'online', label: '已上线列表' },
@@ -64,18 +63,7 @@ export default function Listings() {
     setDetailOpen(true);
     setDetailLoading(true);
     setDetailError('');
-    fetch(`${API_BASE}/admin/hotel/detail/${hotel.hotel_id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok || result.code !== 0) {
-          throw new Error(result.msg || '加载失败');
-        }
-        return result.data;
-      })
+    fetchAdminHotelDetail({ token, hotelId: hotel.hotel_id })
       .then((data) => {
         setDetailData(data || null);
       })
@@ -105,22 +93,12 @@ export default function Listings() {
     setActionMessage('');
     setActionError('');
     try {
-      const response = await fetch(`${API_BASE}/admin/hotel/batch-audit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          hotel_ids: [hotelId],
-          status,
-          reject_reason: status === 'rejected' ? rejectReason : undefined
-        })
+      await submitAdminHotelAudit({
+        token,
+        hotelIds: [hotelId],
+        status,
+        rejectReason: status === 'rejected' ? rejectReason : undefined
       });
-      const result = await response.json();
-      if (!response.ok || result.code !== 0) {
-        throw new Error(result.msg || '操作失败');
-      }
       setActionMessage(status === 'approved' ? '已重新上线' : '已下线');
       return true;
     } catch (requestError) {
@@ -169,18 +147,7 @@ export default function Listings() {
     setActionMessage('');
     setActionError('');
 
-    fetch(`${API_BASE}/admin/hotel/audit-list?page=1&page_size=50&status=${status}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok || result.code !== 0) {
-          throw new Error(result.msg || '加载失败');
-        }
-        return result.data;
-      })
+    fetchAdminAuditList({ token, status, page: 1, pageSize: 50 })
       .then((data) => {
         if (!isActive) {
           return;
