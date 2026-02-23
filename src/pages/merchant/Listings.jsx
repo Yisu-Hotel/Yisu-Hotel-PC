@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { mutate } from 'swr';
 import CreateHotel from './CreateHotel';
 import { deleteHotel, fetchHotelDetail, fetchHotelPage } from '../../utils/api';
 const PAGE_SIZE = 10;
@@ -274,6 +275,7 @@ export default function Listings() {
   const statusRef = useRef(null);
   const [editHotelId, setEditHotelId] = useState('');
   const [editInitialData, setEditInitialData] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -329,7 +331,7 @@ export default function Listings() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [refreshTrigger]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -479,6 +481,7 @@ export default function Listings() {
     try {
       await deleteHotel({ token, hotelId: deleteHotelId });
       setHotels((prev) => (prev || []).filter((hotel) => hotel.hotel_id !== deleteHotelId));
+      mutate(['hotel-all', token]);
       handleCloseDelete();
     } catch (fetchError) {
       setDeleteError(fetchError.message || '删除失败');
@@ -492,14 +495,23 @@ export default function Listings() {
     return new Intl.NumberFormat('zh-CN').format(numberValue);
   };
 
+  const handleBackFromCreate = (shouldRefresh = false) => {
+    setIsCreating(false);
+    setEditHotelId('');
+    setEditInitialData(null);
+    if (shouldRefresh) {
+      setRefreshTrigger((prev) => prev + 1);
+      const token = localStorage.getItem('token');
+      if (token) {
+        mutate(['hotel-all', token]);
+      }
+    }
+  };
+
   if (isCreating) {
     return (
       <CreateHotel
-        onBack={() => {
-          setIsCreating(false);
-          setEditHotelId('');
-          setEditInitialData(null);
-        }}
+        onBack={handleBackFromCreate}
         hotelId={editHotelId}
         initialData={editInitialData}
       />

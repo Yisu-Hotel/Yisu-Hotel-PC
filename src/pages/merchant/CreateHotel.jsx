@@ -473,7 +473,7 @@ export default function CreateHotel({ onBack, hotelId, initialData }) {
         : await createHotel({ token, payload });
       if (result.code === 0) {
         alert(isEditMode ? '酒店更新成功！' : '酒店创建成功！');
-        onBack();
+        onBack(true);
       } else {
         alert(result.msg || (isEditMode ? '更新失败' : '创建失败'));
       }

@@ -62,9 +62,8 @@ export default function Audits() {
     isLoading: hotelsLoading,
     error: hotelsError,
     mutate: refreshHotels
-  } = useSWR(token ? ['audit-hotels', token] : null, () => fetchAllHotels({ token, pageSize: HOTEL_PAGE_SIZE }), {
-    revalidateOnFocus: false,
-    dedupingInterval: 60 * 1000
+  } = useSWR(token ? ['hotel-all', token] : null, () => fetchAllHotels({ token, pageSize: HOTEL_PAGE_SIZE }), {
+    revalidateOnFocus: false
   });
 
   const rawHotels = useMemo(() => hotelData?.list || [], [hotelData]);

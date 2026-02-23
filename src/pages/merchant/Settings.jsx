@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { mutate } from 'swr';
 import { fetchUserProfile, updateUserProfile } from '../../utils/api';
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?q=80&w=200&auto=format&fit=facearea&facepad=2&h=200';
 const MIN_BIRTHDAY = '1900-01-01';
@@ -127,6 +128,7 @@ export default function Settings() {
         }
       }
       setToast({ type: 'success', message: '修改成功', visible: true });
+      mutate(['profile', token]);
     } catch (error) {
       setToast({ type: 'error', message: error.message || '修改失败', visible: true });
     } finally {
