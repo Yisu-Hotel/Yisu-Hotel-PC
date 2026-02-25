@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-
-const API_BASE = 'http://localhost:5050';
+import { mutate } from 'swr';
+import { fetchUserProfile, updateUserProfile } from '../../utils/api';
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?q=80&w=200&auto=format&fit=facearea&facepad=2&h=200';
 const MIN_BIRTHDAY = '1900-01-01';
 
@@ -27,18 +27,7 @@ export default function Settings() {
       return;
     }
     let isActive = true;
-    fetch(`${API_BASE}/user/profile`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok || result.code !== 0) {
-          throw new Error(result.msg || '加载失败');
-        }
-        return result.data;
-      })
+    fetchUserProfile(token)
       .then((data) => {
         if (!isActive) {
           return;
@@ -117,18 +106,7 @@ export default function Settings() {
     };
 
     try {
-      const response = await fetch(`${API_BASE}/user/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json();
-      if (!response.ok || result.code !== 0) {
-        throw new Error(result.msg || '修改失败');
-      }
+      await updateUserProfile({ token, payload });
       const cachedUser = localStorage.getItem('user');
       if (cachedUser) {
         try {
@@ -150,6 +128,7 @@ export default function Settings() {
         }
       }
       setToast({ type: 'success', message: '修改成功', visible: true });
+      mutate(['profile', token]);
     } catch (error) {
       setToast({ type: 'error', message: error.message || '修改失败', visible: true });
     } finally {

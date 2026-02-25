@@ -34,7 +34,7 @@ export default function Overview() {
   const activeTab = searchParams.get('tab') || 'listings';
 
   useEffect(() => {
-    document.title = '管理员控制台 | EasyStay';
+    document.title = '管理员控制台 | 易宿';
     document.documentElement.classList.add('light');
     return () => {
       document.documentElement.classList.remove('light');
@@ -52,9 +52,9 @@ export default function Overview() {
   }, [token, user, navigate]);
 
   const menuItems = [
-    { key: 'listings', label: 'Listings' },
-    { key: 'audits', label: 'Audits' },
-    { key: 'settings', label: 'Settings' }
+    { key: 'listings', label: '酒店列表' },
+    { key: 'audits', label: '审核记录' },
+    { key: 'settings', label: '设置中心' }
   ];
 
   const profileValue = (value) => value || '--';
@@ -76,8 +76,8 @@ export default function Overview() {
     <div className="flex h-screen bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
       <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col">
         <div className="p-6 flex items-center gap-3">
-          <div className="bg-primary p-2 rounded-lg text-white font-bold">ES</div>
-          <h1 className="text-xl font-bold tracking-tight">EasyStay</h1>
+          <div className="bg-primary p-2 rounded-lg text-white font-bold">易宿</div>
+          <h1 className="text-xl font-bold tracking-tight">管理后台</h1>
         </div>
         <nav className="flex-1 mt-4">
           {menuItems.map((item) => {
@@ -98,24 +98,13 @@ export default function Overview() {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-          <button className="w-full rounded-lg px-4 py-3 flex items-center gap-3 text-slate-500 hover:text-primary hover:bg-slate-50 transition-colors">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-              <svg className="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none">
-                <path d="M12 3a6 6 0 0 1 6 6v3.5l1.6 2.7a1 1 0 0 1-.86 1.5H5.26a1 1 0 0 1-.86-1.5L6 12.5V9a6 6 0 0 1 6-6Z" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.5" />
-              </svg>
-            </span>
-            <span className="font-semibold">Notifications</span>
-          </button>
-        </div>
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8">
           <div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Admin Overview</h2>
-            <p className="text-sm text-slate-500">Welcome back</p>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">管理员概览</h2>
+            <p className="text-sm text-slate-500">欢迎您！</p>
           </div>
           <div className="flex items-center gap-4 relative">
             <div className="text-right mr-2 hidden sm:block">
@@ -129,7 +118,7 @@ export default function Overview() {
             >
               <img
                 src={avatarUrl}
-                alt="Profile"
+                alt="头像"
                 className="w-full h-full object-cover"
                 onError={(event) => {
                   if (event.currentTarget.dataset.fallbackApplied) {

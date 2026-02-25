@@ -1,13 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState, useDeferredValue } from 'react';
 import useSWR from 'swr';
-
-// 统一 API 基地址
-const API_BASE = 'http://localhost:5050';
+import { fetchAllHotels, fetchHotelAuditStatus } from '../../utils/api';
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = [
   { value: 'all', label: '全部状态' },
   { value: 'pending', label: '待审核' },
-  { value: 'approved', label: '已通过' },
+  { value: 'published', label: '已发布' },
   { value: 'rejected', label: '已拒绝' }
 ];
 const SORT_OPTIONS = [
@@ -20,57 +18,18 @@ const SORT_OPTIONS = [
 // 从本地读取登录 Token
 const getToken = () => localStorage.getItem('token');
 
-const fetchHotelPage = async (token, page, size) => {
-  const response = await fetch(`${API_BASE}/hotel/list?page=${page}&size=${size}`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-  const result = await response.json();
-  if (!response.ok || result.code !== 0) {
-    throw new Error(result.msg || '加载酒店列表失败');
-  }
-  return result.data;
-};
-
-// 拉取全量酒店用于前端分页/筛选与缓存
-const fetchAllHotels = async (token) => {
-  const firstPage = await fetchHotelPage(token, 1, 100);
-  const total = firstPage.total || 0;
-  const totalPages = Math.max(1, Math.ceil(total / 100));
-  if (totalPages === 1) {
-    return { total, list: firstPage.list || [] };
-  }
-  const restPages = await Promise.all(
-    Array.from({ length: totalPages - 1 }).map((_, index) => fetchHotelPage(token, index + 2, 100))
-  );
-  const list = [firstPage.list || [], ...restPages.map((page) => page.list || [])].flat();
-  return { total, list };
-};
-
-const fetchAuditStatus = async (token, hotelId) => {
-  const response = await fetch(`${API_BASE}/hotel/audit-status/${hotelId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-  const result = await response.json();
-  if (!response.ok || result.code !== 0) {
-    throw new Error(result.msg || '加载审核记录失败');
-  }
-  return Array.isArray(result.data) ? result.data : [];
-};
+const HOTEL_PAGE_SIZE = 100;
 
 const statusBadge = (status) => {
   if (status === 'pending') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
-  if (status === 'approved') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+  if (status === 'published') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
   if (status === 'rejected') return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400';
   return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
 };
 
 const statusText = (status) => {
   if (status === 'pending') return '待审核';
-  if (status === 'approved') return '已通过';
+  if (status === 'published') return '已发布';
   if (status === 'rejected') return '已拒绝';
   if (status === 'draft') return '草稿';
   return status || '-';
@@ -103,15 +62,14 @@ export default function Audits() {
     isLoading: hotelsLoading,
     error: hotelsError,
     mutate: refreshHotels
-  } = useSWR(token ? ['audit-hotels', token] : null, () => fetchAllHotels(token), {
-    revalidateOnFocus: false,
-    dedupingInterval: 60 * 1000
+  } = useSWR(token ? ['hotel-all', token] : null, () => fetchAllHotels({ token, pageSize: HOTEL_PAGE_SIZE }), {
+    revalidateOnFocus: false
   });
 
   const rawHotels = useMemo(() => hotelData?.list || [], [hotelData]);
 
   const filteredHotels = useMemo(() => {
-    const allowedStatuses = new Set(['pending', 'approved', 'rejected']);
+    const allowedStatuses = new Set(['pending', 'published', 'rejected']);
     const baseList = rawHotels.filter((hotel) => allowedStatuses.has(hotel.status));
     const search = normalizeKeyword(deferredKeyword);
     const filtered = baseList.filter((hotel) => {
@@ -182,7 +140,7 @@ export default function Audits() {
     mutate: refreshAudit
   } = useSWR(
     token && selectedHotelId ? ['audit-status', token, selectedHotelId] : null,
-    () => fetchAuditStatus(token, selectedHotelId),
+    () => fetchHotelAuditStatus({ token, hotelId: selectedHotelId }),
     {
       revalidateOnFocus: false,
       dedupingInterval: 30 * 1000
@@ -211,7 +169,7 @@ export default function Audits() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 dark:text-white">酒店审核列表</h3>
-                  <p className="text-xs text-slate-500">仅展示待审核 / 已通过 / 已拒绝的酒店</p>
+                  <p className="text-xs text-slate-500">仅展示待审核 / 已发布 / 已拒绝的酒店</p>
                 </div>
                 <button
                   type="button"

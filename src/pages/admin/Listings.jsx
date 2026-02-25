@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-
-const API_BASE = 'http://localhost:5050';
+import { fetchAdminAuditList, fetchAdminHotelDetail, submitAdminHotelAudit } from '../../utils/api';
 
 const tabs = [
   { key: 'online', label: '已上线列表' },
@@ -10,7 +9,7 @@ const tabs = [
 const STATUS_OPTIONS = [
   { value: 'pending', label: '待审核', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   { value: 'auditing', label: '审核中', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'approved', label: '已通过', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  { value: 'published', label: '已发布', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
   { value: 'rejected', label: '已拒绝', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' }
 ];
 
@@ -64,18 +63,7 @@ export default function Listings() {
     setDetailOpen(true);
     setDetailLoading(true);
     setDetailError('');
-    fetch(`${API_BASE}/admin/hotel/detail/${hotel.hotel_id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok || result.code !== 0) {
-          throw new Error(result.msg || '加载失败');
-        }
-        return result.data;
-      })
+    fetchAdminHotelDetail({ token, hotelId: hotel.hotel_id })
       .then((data) => {
         setDetailData(data || null);
       })
@@ -105,23 +93,13 @@ export default function Listings() {
     setActionMessage('');
     setActionError('');
     try {
-      const response = await fetch(`${API_BASE}/admin/hotel/batch-audit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          hotel_ids: [hotelId],
-          status,
-          reject_reason: status === 'rejected' ? rejectReason : undefined
-        })
+      await submitAdminHotelAudit({
+        token,
+        hotelIds: [hotelId],
+        status,
+        rejectReason: status === 'rejected' ? rejectReason : undefined
       });
-      const result = await response.json();
-      if (!response.ok || result.code !== 0) {
-        throw new Error(result.msg || '操作失败');
-      }
-      setActionMessage(status === 'approved' ? '已重新上线' : '已下线');
+      setActionMessage(status === 'published' ? '已重新上线' : '已下线');
       return true;
     } catch (requestError) {
       setActionError(requestError.message || '操作失败');
@@ -141,7 +119,7 @@ export default function Listings() {
     if (!hotel?.hotel_id) {
       return;
     }
-    const success = await submitStatusChange({ hotelId: hotel.hotel_id, status: 'approved' });
+    const success = await submitStatusChange({ hotelId: hotel.hotel_id, status: 'published' });
     if (success) {
       loadHotels();
     }
@@ -162,25 +140,14 @@ export default function Listings() {
       return () => {};
     }
 
-    const status = activeTab === 'online' ? 'approved' : 'rejected';
+    const status = activeTab === 'online' ? 'published' : 'rejected';
     let isActive = true;
     setLoading(true);
     setError('');
     setActionMessage('');
     setActionError('');
 
-    fetch(`${API_BASE}/admin/hotel/audit-list?page=1&page_size=50&status=${status}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok || result.code !== 0) {
-          throw new Error(result.msg || '加载失败');
-        }
-        return result.data;
-      })
+    fetchAdminAuditList({ token, status, page: 1, pageSize: 50 })
       .then((data) => {
         if (!isActive) {
           return;

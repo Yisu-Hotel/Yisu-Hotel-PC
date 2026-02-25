@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import AMapLoader from '@amap/amap-jsapi-loader';
+import { createHotel, updateHotel } from '../../utils/api';
 
 // 设置高德地图安全密钥
 window._AMapSecurityConfig = {
   securityJsCode: process.env.VITE_AMAP_SECURITY_CODE || '2759e8896af8c3643139709006226061',
 };
 
-const API_BASE = 'http://localhost:5050';
 const DEFAULT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="%23e2e8f0"/><path d="M180 280l90-110 90 110 60-70 110 130H180z" fill="%23cbd5f5"/><circle cx="420" cy="150" r="40" fill="%23cbd5f5"/></svg>';
 
 const FACILITIES_OPTIONS = [
@@ -468,18 +468,12 @@ export default function CreateHotel({ onBack, hotelId, initialData }) {
     const payload = buildPayload();
 
     try {
-      const response = await fetch(isEditMode ? `${API_BASE}/hotel/update/${hotelId}` : `${API_BASE}/hotel/create`, {
-        method: isEditMode ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(isEditMode ? { ...payload, save_as_draft: false } : payload)
-      });
-      const result = await response.json();
+      const { result } = isEditMode
+        ? await updateHotel({ token, hotelId, payload: { ...payload, save_as_draft: false } })
+        : await createHotel({ token, payload });
       if (result.code === 0) {
         alert(isEditMode ? '酒店更新成功！' : '酒店创建成功！');
-        onBack();
+        onBack(true);
       } else {
         alert(result.msg || (isEditMode ? '更新失败' : '创建失败'));
       }
@@ -499,15 +493,9 @@ export default function CreateHotel({ onBack, hotelId, initialData }) {
     };
 
     try {
-      const response = await fetch(isEditMode ? `${API_BASE}/hotel/update/${hotelId}` : `${API_BASE}/hotel/create`, {
-        method: isEditMode ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json();
+      const { result } = isEditMode
+        ? await updateHotel({ token, hotelId, payload })
+        : await createHotel({ token, payload });
       if (result.code === 0) {
         alert(result.msg || '草稿已保存');
       } else {

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
-const API_BASE = 'http://localhost:5050';
+import { fetchHotelDetail, sendChatCompletions } from '../../utils/api';
 const DEFAULT_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="%23e2e8f0"/><path d="M180 280l90-110 90 110 60-70 110 130H180z" fill="%23cbd5f5"/><circle cx="420" cy="150" r="40" fill="%23cbd5f5"/></svg>';
 const CHAT_STORAGE_KEY = 'merchant_chat_history';
 const MAX_CHAT_ROUNDS = 10;
@@ -39,7 +38,7 @@ const statusBadgeStyle = (status) => {
   if (status === 'pending') {
     return 'bg-amber-500 text-white';
   }
-  if (status === 'approved') {
+  if (status === 'published') {
     return 'bg-emerald-500 text-white';
   }
   if (status === 'rejected') {
@@ -346,14 +345,8 @@ export default function Dashboard({
     }
     setDetailLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/hotel/detail/${hotel.hotel_id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const result = await response.json();
-      if (!response.ok || result.code !== 0) {
-        throw new Error(result.msg || '加载失败');
-      }
-      setDetailData(result.data);
+      const data = await fetchHotelDetail({ token, hotelId: hotel.hotel_id });
+      setDetailData(data);
       setDetailError('');
     } catch (fetchError) {
       setDetailError(fetchError.message || '加载失败');
@@ -401,17 +394,7 @@ export default function Dashboard({
     setChatError('');
     setChatLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          messages: requestMessages
-        })
-      });
-      const result = await response.json();
+      const { response, result } = await sendChatCompletions({ token, messages: requestMessages });
       if (!response.ok || result.code !== 0) {
         throw new Error(result.msg || 'AI服务异常');
       }
@@ -661,8 +644,8 @@ export default function Dashboard({
           )}
         />
         <StatCard
-          title="已通过审核"
-          value={error ? '--' : stats.approvedHotels}
+          title="已发布"
+          value={error ? '--' : stats.publishedHotels}
           loading={loading}
           icon={(
             <svg className="h-5 w-5 text-amber-500" viewBox="0 0 24 24" fill="none">
